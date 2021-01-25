@@ -7,26 +7,31 @@ const {WebRTCModule} = NativeModules;
 
 export default class RTCRtpTransceiver {
     _peerConnectionId: number;
-    _sender: RTCRtpSender;
+    sender: RTCRtpSender;
     _receiver: RTCRtpReceiver
-    
+
     _id: string;
     _mid: string | null;
     _direction: string;
     _currentDirection: string;
     _stopped: boolean;
     _mergeState: Function;
-    
+
     constructor(pcId, state, mergeState) {
         this._peerConnectionId = pcId;
-        this._id = state.id;
+        this._id = state.id; // 이런게 어딨어.
         this._mid = state.mid ? state.mid : null;
         this._direction = state.direction;
         this._currentDirection = state.currentDirection;
         this._stopped = state.isStopped;
         this._mergeState = mergeState;
-        this._sender = new RTCRtpSender(this, mergeState);
+        this.sender = new RTCRtpSender(pcId, this.id, null, null);
         this._receiver = new RTCRtpReceiver(state.receiver.id, new MediaStreamTrack(state.receiver.track));
+    }
+
+    // 임의로 추가 https://www.w3.org/TR/webrtc/#dfn-transceiver-kind
+    get kind(){
+        return this._receiver.track.kind || undefined;
     }
 
     get id() {
@@ -64,9 +69,9 @@ export default class RTCRtpTransceiver {
         return this._currentDirection;
     }
 
-    get sender() {
-        return this._sender;
-    }
+    // get sender() { 외부 접근을 위해 _ 뺌
+    //     return this._sender;
+    // }
 
     get receiver() {
         return this._receiver;
