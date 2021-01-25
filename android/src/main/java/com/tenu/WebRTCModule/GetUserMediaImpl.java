@@ -1,4 +1,4 @@
-package com.oney.WebRTCModule;
+package com.tenu.WebRTCModule;
 
 import android.app.Activity;
 import android.content.Context;

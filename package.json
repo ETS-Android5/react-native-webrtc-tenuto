@@ -1,6 +1,6 @@
 {
   "name": "react-native-webrtc-tenuto",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tenuto-corp/react-native-webrtc-tenuto.git"
@@ -16,9 +16,10 @@
     "prop-types": "^15.5.10",
     "uuid": "^3.3.2"
   },
-  "peerDependencies": {
-    "react-native": ">=0.60.0"
-  },
+  "keywords": [
+    "react-native-webrtc",
+    "webrtc"
+  ],
   "scripts": {
     "postinstall": "cross-os darwin-extract"
   },

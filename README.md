@@ -1,5 +1,7 @@
 This project is originated from react-native-webrtc
 
+- version: 1.0.1
+
 # react-native-webrtc
 
 [![npm version](https://badge.fury.io/js/react-native-webrtc.svg)](https://badge.fury.io/js/react-native-webrtc)
