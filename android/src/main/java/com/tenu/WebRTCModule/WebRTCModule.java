@@ -722,88 +722,95 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
         }
     }
 
-    //FLAG: 직접 만든 코드
+    //FLAG: 직접 만든 코드 버전 쓰리
     @ReactMethod
-    public void peerConnectionAddTrackV2(int id, String trackId, Callback callback) {
-        ThreadUtils.runOnExecutor(() -> peerConnectionAddTrackAsyncV2(id, trackId, callback));
+    public void peerConnectionAddTrackV3(int id, String trackId, Callback callback){
+        ThreadUtils.runOnExecutor(() -> peerConnectionAddTrackAsyncV3(id, trackId, callback));
     }
 
-    private void peerConnectionAddTrackAsyncV2(int id, String trackId, Callback callback) {
+    private void peerConnectionAddTrackAsyncV3(int id, String trackId, Callback callback){
+        // 0. 해당하는 peerConnection 찾기
         PeerConnectionObserver pco = mPeerConnectionObservers.get(id);
-        if (pco != null) {
-            if (pco.isUnifiedPlan == true) {
-                MediaStreamTrack myTrack = getLocalTrack(trackId);
-                if (myTrack == null) {
-                    Log.d(TAG, "peerConnectionAddTrack() mediaStreamTrack is null(local)");
-                    return;
-                }
-                try {
-                    Log.d(TAG, "peerConnectionAddTrackAsyncV2 First");
-                    String transceiverId = "";
-                    boolean reuse = false;
-                    List<RtpTransceiver> rtpTransceiverList = pco.getPeerConnection().getTransceivers();
+        // 0. track 찾기
+        MediaStreamTrack mediaStreamTrack = getLocalTrack(trackId);
+        if (mediaStreamTrack == null) {
+            Log.d(TAG, "peerConnectionAddTrack() mediaStreamTrack is null(local)");
+            return;
+        }
 
-                    RtpSender sender = null;
-
-                    Log.d(TAG, "peerConnectionAddTrackAsyncV2 Before loop");
-                    for (RtpTransceiver rtpTransceiver : rtpTransceiverList) {
-                        Log.d(TAG, "peerConnectionAddTrackAsyncV2 in loop");
-                        RtpSender rtpSender = rtpTransceiver.getSender();
-                        if (rtpSender.track() != null && rtpSender.track().id().equalsIgnoreCase(myTrack.id())) {
-                            //  track already exists in senders, Throw error
-                            callback.invoke(false, "add track failed: InvalidAccessError");
-                            Log.e(TAG, "peerConnectionAddTrackAsyncV2() failed. Duplicated sender");
-                            return;
-                        }
-                        if (rtpSender.track() == null &&
-                                (rtpTransceiver.getReceiver().track() != null) &&
-                                (rtpTransceiver.getReceiver().track().kind().equalsIgnoreCase(myTrack.kind()))
-                        ) {
-
-                            Log.d(TAG, "peerConnectionAddTrackAsyncV2() rtpTransceiver FOUND!!!");
+        if(pco != null){
+            // 1. closed인지 확인하기
+            if(pco == null || pco.getPeerConnection() == null){
+                callback.invoke(false, "pco == null || pco.getPeerConnection() == null");
+                Log.e(TAG, "pco == null || pco.getPeerConnection() == null");
+                return;
+            }
+            // 2. isUnifiedPlan인지
+            if(pco.isUnifiedPlan == true){
+                RtpSender sender = null; // 반환할 sender. 
+                // 3. 이미 전송하고 있는 track인지 확인
+                for (RtpSender rtpSender : pco.getPeerConnection().getSenders()) {
+                    if (rtpSender.track() != null) {
+                        if (rtpSender.track().id().equalsIgnoreCase(trackId)) { // 
                             sender = rtpSender;
-                            sender.setTrack(myTrack, false);
-                            reuse = true;
-                            rtpTransceiver.setDirection(RtpTransceiver.RtpTransceiverDirection.SEND_RECV);
+                            Log.d(TAG, "이미 전송중인 Track 입니당");
                             break;
                         }
                     }
-
-                    // Transceiver를 추가해야한다면
-                    if (sender == null) {
-                        sender = pco.addTrack(myTrack);
-                        reuse = false;
-                        Log.d(TAG, "peerConnectionAddTrackAsyncV2() succeed. sender was NULL, but added");
+                }
+                boolean reuse = false;
+                if(sender == null){
+                    // 4. transceiver 찾기 -> kind 같고 sender.track 이 null이고
+                    List<RtpTransceiver> transceivers = pco.getPeerConnection().getTransceivers();
+                    for(RtpTransceiver transceiver : transceivers){
+                        if(transceiver.getReceiver().track() != null){
+                            if(transceiver.getSender().track() == null && transceiver.getReceiver().track().kind().equalsIgnoreCase(mediaStreamTrack.kind())){
+                                transceiver.getSender().setTrack(mediaStreamTrack, false);
+                                transceiver.setDirection(RtpTransceiver.RtpTransceiverDirection.SEND_RECV);
+                                sender = transceiver.getSender();
+                                reuse = true;
+                                Log.d(TAG, "transceiver 추가 완료!!!");
+                                break;
+                            }
+                        }
                     }
-
-
-                    Log.d(TAG, "peerConnectionAddTrackAsyncV2 sender is not null!..");
-                    if (sender != null) {
-                        WritableMap map = Arguments.createMap();
-                        WritableMap subMap = Arguments.createMap();
-
-                        map.putString("id", sender.id());
-                        subMap.putString("id", sender.track().id());
-                        subMap.putString("kind", sender.track().kind());
-                        subMap.putString("readyState", (sender.track().state() == MediaStreamTrack.State.LIVE) ? "live" : "ended");
-                        subMap.putBoolean("enabled", sender.track().enabled());
-                        subMap.putBoolean("remote", false); // 왜 기본적으로 False? => local Track만 더해지고, remote Track은 여기서 더해지지 않음. remote는 자동적으로 transceiver에 더해짐.
-                        subMap.putBoolean("reuse", reuse);
-                        map.putMap("track", subMap);
-
-                        callback.invoke(true, map);
-                        Log.d(TAG, "peerConnectionAddTrackAsyncV2() succeed. sender is not null");
-                        return;
+                    // 만약 없으면?
+                    if(sender == null){
+                        Log.d(TAG, "sender가 없어서 addTrack 함!");
+                        sender = pco.addTrack(mediaStreamTrack);
                     }
+                }
+                // 반환객체는 Sender. (track 포함!)
+                // 이미 전송중인 것도 여기서 보내고, 갈음한것도, 추가한 것도 여기서 보낸당!
+                if(sender != null){
+                    WritableMap map = Arguments.createMap();
+                    WritableMap subMap = Arguments.createMap();
 
-                } catch (Exception e) {
+                    map.putString("id", sender.id());
+                    subMap.putString("id", sender.track().id());
+                    subMap.putString("kind", sender.track().kind());
+                    subMap.putString("readyState", (sender.track().state() == MediaStreamTrack.State.LIVE) ? "live" : "ended");
+                    subMap.putBoolean("enabled", sender.track().enabled());
+                    subMap.putBoolean("remote", false); // 왜 기본적으로 False? => local Track만 더해지고, remote Track은 여기서 더해지지 않음. remote는 자동적으로 transceiver에 더해짐.
+                    map.putBoolean("reuse", reuse); // 받는 곳에선 반드시 false여야함.. 왜냐면 로직을 그렇게 짜놨으니까!
+                    map.putMap("track", subMap);
+
+                    callback.invoke(true, map);
+                    Log.d(TAG, "peerConnectionAddTrackAsyncV3() succeed. sender is not null");
+                }else{
                     callback.invoke(false, "add track failed");
                     Log.e(TAG, "peerConnectionAddTrack() failed");
                 }
-            }
+            } else {
+                callback.invoke(false, "Plan-B mode does not allow AddTrack");
+                Log.e(TAG, "Plan-B mode does not allow AddTrack");
+                return;
+            }            
+        } else {
+            callback.invoke(false, "pco == null");
+            Log.e(TAG, "peerConnectionAddTrack() failed");
         }
     }
-
 
     //FLAG webrtc2를 보고 추가한 코드
     @ReactMethod

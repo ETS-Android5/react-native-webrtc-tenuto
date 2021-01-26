@@ -112,7 +112,7 @@ export default class RTCPeerConnection extends EventTarget(PEER_CONNECTION_EVENT
     _remoteStreams: Array<MediaStream> = [];
     _subscriptions: Array<any>;
     _transceivers: Array<RTCRtpTransceiver> = [];
-
+    _closed:Boolean = false;
     /**
      * The RTCDataChannel.id allocator of this RTCPeerConnection.
      */
@@ -123,6 +123,13 @@ export default class RTCPeerConnection extends EventTarget(PEER_CONNECTION_EVENT
         this._peerConnectionId = nextPeerConnectionId++;
         WebRTCModule.peerConnectionInit(configuration, this._peerConnectionId);
         this._registerEvents();
+    }
+
+    get isClosed(){
+        return this._closed;
+    }
+    set isClosed(closed){
+        this._closed = closed;
     }
 
     addStream(stream: MediaStream) {// FLAG: callback으로 바꿨으니 callback으로 해주긴 하는데 왜 callback일까?
@@ -178,8 +185,9 @@ export default class RTCPeerConnection extends EventTarget(PEER_CONNECTION_EVENT
     };
 
     // FLAG: 추가함.
-    addTrack(track: MediaStreamTrack) {
-        return new Promise((resolve, reject) => {
+    addTrackV1(track: MediaStreamTrack) {// Version 1
+        return new Promise((resolve, reject) => { 
+            console.log("Add Track Called", track.kind);
             let sender = this._senders.find((sender) => (sender.track && sender.track().id === track.id));
             if (sender !== undefined) {
                 return;
@@ -204,41 +212,51 @@ export default class RTCPeerConnection extends EventTarget(PEER_CONNECTION_EVENT
             })
         })
     }
-
-    addTrackV2(track: MediaStreamTrack) {
-        return new Promise(((resolve, reject) => {
-            // if sender track이 비어있는 transceiver가 존재.
-            let transceivers = this.getTransceivers();
+    // return Promise<RtpSender|undefined>
+    addTrack(track: MediaStreamTrack){ // Version 3
+        return new Promise((resolve, reject)=>{
+            // 1. pc가 close인지 확인
+            if(this.isClosed){
+                reject('InvalidStateError: PC is Closed');
+            }
+            
+            // 2. track을 더해줄 transceiver를 찾는다.
+            const transceivers = this.getTransceivers();
             const existing = transceivers.find((t) => (t.sender.track == null && t.kind === track.kind));
-
-            WebRTCModule.peerConnectionAddTrackV2(this._peerConnectionId, track.id, (successful, data) => {
-                if (successful) {
-                    const info = {
-                        id: data.track.id,
-                        kind: data.track.kind,
-                        label: data.track.kind, //FLAG: native쪽에서 label에 대한 정보를 안넣음.(없어서일까? 그냥 빼먹은거일까?) WebRTCModule.java의 760번째 코드 참고
-                        enabled: data.track.enabled,
-                        readyState: data.track.readyState,
-                        remote: data.track.remote,
-                    };
-                    // 여기서 만약 transceiver가 존재했다면?
-                    if (existing) {
-                        existing.sender.track = new MediaStreamTrack(info);
+            if(existing){
+                console.log("EXISTING in addTrack");
+                WebRTCModule.peerConnectionAddTrackV3(this._peerConnectionId, track.id, (successful, data)=>{
+                    if(successful){
+                        console.log("AddTrack 성공!?");
+                        const trackInfo = {
+                            id: data.track.id,
+                            kind: data.track.kind,
+                            label: data.track.kind, 
+                            enabled: data.track.enabled,
+                            readyState: data.track.readyState,
+                            remote: data.track.remote,
+                        };
+                        if(!data.reuse){
+                            console.warn("existing이면 reuse는 반드시 True여야할텐데");
+                        }
                         existing.sender.id = data.id;
-                        existing.direction = "sendrecv"; // receiver는 항상 있으니까.
-                    } else {
-                        // transceiver가 존재하지 않았다면? 말도 안됨. 이 코드의 로직상 이런 경우는 없음.
-                        console.warn("이건 내가 신경쓸 필요가 없을걸. 이건 에러야");
+                        existing.sender.track = new MediaStreamTrack(trackInfo);
+                        // existing.direction = "sendrecv";
+                        resolve(existing.sender);
+                    }else{
+                        reject(data);
                     }
-                    resolve(sender);
-                } else {
-                    reject(data);
-                }
-            })
-        }))
+                });
+            }else{
+                console.log("NOT EXISTING");
+                reject("No Transceiver exists");
+                // 다른 라이브러리에서는 자동으로 이걸 추가해주기도 하는 것 같다. 하지만 일단 TenuClient에서는 addTransceiver를 하고 나서 동작하기 때문에! 이럴 일이 없을 것..
+            }
+        });
     }
 
-    removeTrackV2(sender: RTCRtpSender) {
+    //FLAG: 추가한 코드. Version2 
+    removeTrack(sender: RTCRtpSender) {
         return new Promise((resolve, reject) => {
             const theSender = this.getTransceivers().find(t => t.sender === sender);
             if (!theSender) {
@@ -247,13 +265,14 @@ export default class RTCPeerConnection extends EventTarget(PEER_CONNECTION_EVENT
             WebRTCModule.peerConnectionRemoveTrackV2(this._peerConnectionId, theSender.sender.id(), (successful) => {
                 if(successful){
                     theSender.sender.track = null;
+                    theSender.stop();
                 }
                 resolve(successful);
             })
         })
     }
 
-    removeTrack(sender: RtpSender) {
+    removeTrackV1(sender: RtpSender) {
         return new Promise((resolve, reject) => {
             const index = this._senders.indexOf(sender);
             if (index === -1) {
@@ -269,14 +288,7 @@ export default class RTCPeerConnection extends EventTarget(PEER_CONNECTION_EVENT
         });
     }
 
-    // FLAG: 2에선 왜인지 모르겠지만 w3 명세랑 다른 이름으로 함수를 호출함(getRtpSenders)
-    // 그래서 그냥 이름만 w3 표준이랑 일치시킴.
-    //TODO: 이건 아래쪽에 getTransceiver위치로 옮기기
     getSenders() {
-        return this._senders.slice();
-    }
-
-    getSenders2() {
         const transceivers = this.getTransceivers();
         const senders = [];
         for (let index = 0; index < transceivers.length; index += 1) {
@@ -405,6 +417,7 @@ export default class RTCPeerConnection extends EventTarget(PEER_CONNECTION_EVENT
     }
 
     close() {
+        this.isClosed = true;
         WebRTCModule.peerConnectionClose(this._peerConnectionId);
     }
 
@@ -418,10 +431,14 @@ export default class RTCPeerConnection extends EventTarget(PEER_CONNECTION_EVENT
 
     _getTransceiver(state): RTCRtpTransceiver {
         const existing = this._transceivers.find((t) => t.id === state.id);
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+        console.log(state.id);
         if (existing) {
+            console.log('EE');
             existing._updateState(state);
             return existing;
         } else {
+            console.log('NN');
             let res = new RTCRtpTransceiver(this._peerConnectionId, state, (s) => this._mergeState(s));
             this._transceivers.push(res);
             return res;
@@ -446,6 +463,7 @@ export default class RTCPeerConnection extends EventTarget(PEER_CONNECTION_EVENT
     }
 
     _unregisterEvents(): void {
+        this.isClosed = true;
         this._subscriptions.forEach(e => e.remove());
         this._subscriptions = [];
     }
@@ -467,6 +485,7 @@ export default class RTCPeerConnection extends EventTarget(PEER_CONNECTION_EVENT
                 if (ev.iceConnectionState === 'closed') {
                     // This PeerConnection is done, clean up event handlers.
                     this._unregisterEvents();
+                    
                 }
             }),
             EventEmitter.addListener('peerConnectionStateChanged', ev => {
