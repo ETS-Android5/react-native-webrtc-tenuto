@@ -1,5 +1,6 @@
 import {NativeModules} from 'react-native';
-import RTCRtpTransceiver from './RTCRtpTransceiver';
+import MediaStreamTrack from './MediaStreamTrack';
+// import RTCRtpParameters from './RTCRtpParameters';
 
 const {WebRTCModule} = NativeModules;
 
@@ -10,12 +11,34 @@ export default class RTCRtpSender {
     // _mergeState: Function;
     track: MediaStreamTrack;
 
-
+    params: RTCRtpParameters ; 
     constructor(pcId: number, _transceiverId: String, id: String, t: MediaStreamTrack) {
         this._peerConnectionId = pcId;
         this._transceiverId = _transceiverId;
         this.id = id;
         this.track = t;
+    }
+
+    // setParameter = (params: RTCRtpParameters) => {
+    //     return new Promise((resolve, reject) => {
+    //         WebRTCModule
+    //     })
+    // }
+    getParameters = () => {
+        return new Promise((resolve, reject)=>{
+            if(!this.id){
+                reject("Not initiated");
+            }
+            WebRTCModule.peerConnectionSenderGetParameters(this._peerConnectionId, this.id, (successful, data)=>{
+                if(successful){
+                    console.log("이걸 성공했다고!!!");
+                    resolve(data.transactionId);
+                }else{
+                    console.warn("getparameters 실패");
+                    reject(data);
+                }
+            })
+        })
     }
 
     // TODO: 다른 방법으로 Implement해야함.

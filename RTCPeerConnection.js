@@ -108,7 +108,7 @@ export default class RTCPeerConnection extends EventTarget(PEER_CONNECTION_EVENT
 
     _peerConnectionId: number;
     _localStreams: Array<MediaStream> = [];
-    _senders: Array<RtpSender> = [];
+    _senders: Array<RtpSender> = []; //TODO: 안쓰기 때문에 deprecate해야함.
     _remoteStreams: Array<MediaStream> = [];
     _subscriptions: Array<any>;
     _transceivers: Array<RTCRtpTransceiver> = [];

@@ -1587,4 +1587,53 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
             callback.invoke(false, "peerConnection is null");
         }
     }
+
+    //FLAG: Added. 
+    @ReactMethod
+    public void peerConnectionSenderGetParameters(int id, String senderId, final Callback callback) {
+        // 궁금증: 다 Async해야할까?
+        ThreadUtils.runOnExecutor(() ->
+            this.peerConnectionSenderGetParametersAsync(id, senderId, callback));
+    }
+
+    private void peerConnectionSenderGetParametersAsync(int id, String senderId, final Callback callback) {
+        PeerConnectionObserver pco = mPeerConnectionObservers.get(id);
+        if (pco != null) {
+            RtpSender rtpSender = null;
+            for (int i = 0; i < pco.getPeerConnection().getSenders().size(); i++) {
+                if (pco.getPeerConnection().getSenders().get(i).id().equalsIgnoreCase(senderId)) {
+                    rtpSender = pco.getPeerConnection().getSenders().get(i);
+                    break;
+                }
+            }
+            if(rtpSender == null){
+                Log.d(TAG, "peerConnectionSenderGetParameters() rtpSender is null");
+                callback.invoke(false, "rtpSender is null");                   
+                return;
+            }
+            
+            RtpParameters params = rtpSender.getParameter();
+            Log.d(TAG, "parameter Getto!!");
+            Log.d(TAG, params);
+            WritableMap res = Arguments.createMap();
+            res.putString("transactionId", params.getTransactionId());
+            // res.putString("transactionId", params.getTransactionId());
+            // res.putString("transactionId", params.getTransactionId());
+            RtpParameters.Encoding codec = params.getEncodings()[0];
+            callback.invoke(true, res);
+            // res.putString("rid", params.Encoding.getRid());
+            // res.putDouble("bitratePriority", params.Encoding.getBitratePriority());
+            // res.putBoolean("active", params.Encoding.getActive());
+            // res.putInt("maxBitrateBps", params.Encoding.getMaxBitrateBps());
+            // res.putInt("minBitrateBps", params.Encoding.getMinBitrateBps());
+            // res.putString("id", params.Codec.getId());
+
+
+
+        }else{
+            Log.d(TAG, "peerConnectionSenderGetParameters() peerConnection is null");
+            callback.invoke(false, "peerConnection is null");
+            return;
+        }
+    }
 }
