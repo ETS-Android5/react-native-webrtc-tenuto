@@ -224,10 +224,8 @@ export default class RTCPeerConnection extends EventTarget(PEER_CONNECTION_EVENT
             const transceivers = this.getTransceivers();
             const existing = transceivers.find((t) => (t.sender.track == null && t.kind === track.kind));
             if(existing){
-                console.log("EXISTING in addTrack");
                 WebRTCModule.peerConnectionAddTrackV3(this._peerConnectionId, track.id, (successful, data)=>{
                     if(successful){
-                        console.log("AddTrack 성공!?");
                         const trackInfo = {
                             id: data.track.id,
                             kind: data.track.kind,

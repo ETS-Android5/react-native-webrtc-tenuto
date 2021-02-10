@@ -1612,23 +1612,11 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
                 return;
             }
             
-            RtpParameters params = rtpSender.getParameter();
-            Log.d(TAG, "parameter Getto!!");
-            Log.d(TAG, params);
+            /* 다 만들었었는데 실수로 날림...커밋을 잘 하자. */
+            RtpParameters params = rtpSender.getParameters();
             WritableMap res = Arguments.createMap();
-            res.putString("transactionId", params.getTransactionId());
-            // res.putString("transactionId", params.getTransactionId());
-            // res.putString("transactionId", params.getTransactionId());
-            RtpParameters.Encoding codec = params.getEncodings()[0];
+            res.putString("transactionId", "testtest");
             callback.invoke(true, res);
-            // res.putString("rid", params.Encoding.getRid());
-            // res.putDouble("bitratePriority", params.Encoding.getBitratePriority());
-            // res.putBoolean("active", params.Encoding.getActive());
-            // res.putInt("maxBitrateBps", params.Encoding.getMaxBitrateBps());
-            // res.putInt("minBitrateBps", params.Encoding.getMinBitrateBps());
-            // res.putString("id", params.Codec.getId());
-
-
 
         }else{
             Log.d(TAG, "peerConnectionSenderGetParameters() peerConnection is null");

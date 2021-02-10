@@ -31,8 +31,7 @@ export default class RTCRtpSender {
             }
             WebRTCModule.peerConnectionSenderGetParameters(this._peerConnectionId, this.id, (successful, data)=>{
                 if(successful){
-                    console.log("이걸 성공했다고!!!");
-                    resolve(data.transactionId);
+                    resolve(data);
                 }else{
                     console.warn("getparameters 실패");
                     reject(data);
