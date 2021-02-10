@@ -10,3 +10,12 @@ Podfile.lock
 WebRTC.xcframework
 WebRTC.dSYMs
 
+# editor
+.vscode
+
+# for java 
+examples/GumTestApp/android/.project
+examples/GumTestApp/android/.settings
+examples/GumTestApp_macOS/android/.project
+examples/GumTestApp_macOS/android/.settings
+android/.settings/org.eclipse.buildship.core.prefs
