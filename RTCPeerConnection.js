@@ -99,6 +99,7 @@ export default class RTCPeerConnection extends EventTarget(PEER_CONNECTION_EVENT
     onnegotiationneeded: ?Function;
     onsignalingstatechange: ?Function;
 
+    ontrack: ?Function; // 이러면 그냥 되는걸까?
     onaddstream: ?Function;
     onremovestream: ?Function;
 
