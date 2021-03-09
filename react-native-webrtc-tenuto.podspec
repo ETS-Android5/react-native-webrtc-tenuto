@@ -1,4 +1,4 @@
-equire 'json'
+require 'json'
 
 package = JSON.parse(File.read(File.join(__dir__, 'package.json')))
 
