@@ -333,10 +333,11 @@ RCT_EXPORT_METHOD(peerConnectionAddTransceiver:(nonnull NSNumber *)peerConnectio
     NSString* trackId = innerOptions[@"trackId"];
     NSString* mediaType = innerOptions[@"type"];
     NSDictionary* transceiverInit = innerOptions[@"init"];
-
+    RCTLogTrace(@"addTransceiver: %@", innerOptions);
     RTCRtpTransceiver* transceiver = nil;
 
     if(trackId != nil) {
+        RCTLogTrace(@"addTransceiver: trackId is not null");
         RTCMediaStreamTrack *track = [self trackForId:trackId];
         if (transceiverInit != nil) {
             RTCRtpTransceiverInit *init = [self mapToTransceiverInit:transceiverInit];
@@ -345,6 +346,7 @@ RCT_EXPORT_METHOD(peerConnectionAddTransceiver:(nonnull NSNumber *)peerConnectio
             transceiver = [peerConnection addTransceiverWithTrack:track];
         }
     } else if (mediaType != nil) {
+        RCTLogTrace(@"addTransceiver: mediaType is not null");
         RTCRtpMediaType rtpMediaType = [self stringToRtpMediaType:mediaType];
         if (transceiverInit != nil) {
             RTCRtpTransceiverInit *init = [self mapToTransceiverInit:transceiverInit];
@@ -353,6 +355,7 @@ RCT_EXPORT_METHOD(peerConnectionAddTransceiver:(nonnull NSNumber *)peerConnectio
             transceiver = [peerConnection addTransceiverOfType:rtpMediaType];
         }
     } else {
+        RCTLogTrace(@"addTransceiver: incomplete Error");
         callback(@[
                 @(NO),
                 @{
@@ -362,6 +365,7 @@ RCT_EXPORT_METHOD(peerConnectionAddTransceiver:(nonnull NSNumber *)peerConnectio
         ]);
     }
     if (transceiver == nil) {
+        RCTLogTrace(@"addTransceiver: transceiver Error");
         callback(@[
                 @(NO),
                 @{
@@ -371,7 +375,9 @@ RCT_EXPORT_METHOD(peerConnectionAddTransceiver:(nonnull NSNumber *)peerConnectio
         ]);
     }else{
         NSMutableArray *transceivers = [self serializeState:peerConnectionId];
-        callback(@[@(YES), @{@"id": transceiver.mid, @"state": @{@"transceivers":transceivers}}]);
+        NSString* tId = transceiver.sender.senderId? transceiver.sender.senderId : @"";
+        RCTLogTrace(@"addTransceiver: Good. %@", transceiver);
+        callback(@[@(YES), @{@"id": tId, @"state": @{@"transceivers":transceivers}}]);
     }
 
 
