@@ -48,5 +48,6 @@ static NSString *const kEventPeerConnectionAddedTrack = @"peerConnectionAddedTra
                         decoderFactory:(id<RTCVideoDecoderFactory>)decoderFactory;
 
 - (RTCMediaStream*)streamForReactTag:(NSString*)reactTag;
+- (RTCMediaStreamTrack*)trackForId:(NSString*)trackId;
 
 @end
