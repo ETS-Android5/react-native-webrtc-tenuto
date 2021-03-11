@@ -790,6 +790,7 @@ RCT_EXPORT_METHOD(peerConnectionAddTransceiver:(nonnull NSNumber *)peerConnectio
                                    @"tracks": tracks
                            }];
     }else{
+    // 처음 들어온 stream일 경우.
         streamReactTag = [[NSUUID UUID] UUIDString];
         NSMutableArray *tracks = [NSMutableArray array];
         for (RTCVideoTrack *track in stream.videoTracks) {
@@ -815,7 +816,6 @@ RCT_EXPORT_METHOD(peerConnectionAddTransceiver:(nonnull NSNumber *)peerConnectio
                                    @"tracks": tracks
                            }];
     }
-    // 처음 들어온 stream일 경우.
 
 }
 
