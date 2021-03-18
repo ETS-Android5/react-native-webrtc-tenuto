@@ -1087,7 +1087,17 @@ didStartReceivingOnTransceiver:(RTCRtpTransceiver *)transceiver{
     }
     return @"";
 }
-
+-(NSString *)peerConnectionStateToString:(RTCPeerConnectionState)state{
+    switch (state) {
+        case RTCPeerConnectionStateNew: return @"new";
+        case RTCPeerConnectionStateConnecting: return @"connecting";
+        case RTCPeerConnectionStateConnected: return @"connected";
+        case RTCPeerConnectionStateDisconnected: return @"disconnected";
+        case RTCPeerConnectionStateFailed: return @"failed";
+        case RTCPeerConnectionStateClosed: return @"closed";
+    }
+    return nil;
+}
 
 -(RTCRtpEncodingParameters*)mapToEncoding:(NSDictionary*)map {
     RTCRtpEncodingParameters *encoding = [[RTCRtpEncodingParameters alloc] init];
