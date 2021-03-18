@@ -46,6 +46,7 @@
 
 #if !TARGET_IPHONE_SIMULATOR
   RTCCameraVideoCapturer *videoCapturer = [[RTCCameraVideoCapturer alloc] initWithDelegate:videoSource];
+  // RCTLogTrace(@"===========createVideoTrack: %@", constraints);
   VideoCaptureController *videoCaptureController
         = [[VideoCaptureController alloc] initWithCapturer:videoCapturer
                                             andConstraints:constraints[@"video"]];

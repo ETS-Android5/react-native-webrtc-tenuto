@@ -87,7 +87,7 @@ RCT_EXPORT_METHOD(peerConnectionInit:(RTCConfiguration*)configuration
                     peerConnectionWithConfiguration:configuration
                                         constraints:constraints
                                            delegate:self];
-
+    
     peerConnection.dataChannels = [NSMutableDictionary new];
     peerConnection.reactTag = objectID;
     peerConnection.remoteStreams = [NSMutableDictionary new];
@@ -193,6 +193,55 @@ RCT_EXPORT_METHOD(peerConnectionAddTransceiver:(nonnull NSNumber *)objectID
         };
         callback(@[@(YES), response]);
     }
+}
+
+RCT_EXPORT_METHOD(peerConnectionAddTrack:(nonnull NSNumber *)objectID
+        trackId:(NSString *)trackId
+        callback:(RCTResponseSenderBlock)callback)
+{
+    //TODO: Implement 되어야함.
+    /*
+    //0. 해당하는 peerConnection 찾기
+    RTCPeerConnection *peerConnection = self.peerConnections[objectID];
+    if (!peerConnection) {
+        //1. peerConnection 에러 반환.
+        //callback.invoke(false, "pco == null || pco.getPeerConnection() == null");
+        return;
+    }
+    //0. 해당하는 track 찾기
+    RTCMediaStreamTrack *track = [self trackForId:trackId];
+    if(track == nil){
+        RCTLogTrace(@"peerConnectionAddTrack() is nil");
+    }
+    RTCRtpSender *sender = [peerConnection addTrack:track streamIds:<#(nonnull NSArray<NSString *> *)#>]
+    
+    // 2. isUnifiedPlan인지
+    if(peerConnection.configuration.sdpSemantics == RTCSdpSemanticsUnifiedPlan){
+        // 3. 이미 전송하고 있는 track인지 확인
+        RTCRtpSender *sender = nil;
+        for (RTCRtpSender *rtpSender in peerConnection.senders) {
+            if(rtpSender.track != nil){
+                if([rtpSender.track.trackId isEqualToString:track.trackId]){
+                    sender = rtpSender;
+                    RCTLogTrace(@"이미 전송중인 Track 입니다.");
+                    break;
+                }
+            }
+        }
+        Boolean reuse = false;
+        if(sender == nil){
+            // 4. transceiver 찾기 -> kind 같고 & sender.track 이 null이고
+            for (RTCRtpTransceiver *transceiver in peerConnection.transceivers) {
+                if(transceiver.receiver.track != nil){
+                    if(transceiver.sender.track == nil && [transceiver.receiver.track.kind isEqualToString:track.kind]){
+                        transceiver.sender.s
+                    }
+                }
+            }
+            
+        }
+    }
+    */
 }
 
 RCT_EXPORT_METHOD(peerConnectionTransceiverSetDirection:(nonnull NSNumber *)objectID
@@ -873,10 +922,15 @@ RCT_EXPORT_METHOD(getTrackVolumes:(RCTResponseSenderBlock)callback)
 /** Called any time the PeerConnectionState changes. */
 - (void)peerConnection:(RTCPeerConnection *)peerConnection
 didChangeConnectionState:(RTCPeerConnectionState)newState {
-    
     RCTLogTrace(@"didChangeConnectionState ============================ triggerred");
-    // TODO(optional)
+    
+    [self.bridge.eventDispatcher sendDeviceEventWithName:@"peerConnectionStateChanged"
+                                body:@{
+                         @"id": peerConnection.reactTag,
+                         @"connectionState": [self peerConnectionStateToString:newState]
+                       }];
 }
+
 
 - (void)peerConnection:(RTCPeerConnection *)peerConnection
 didChangeStandardizedIceConnectionState:(RTCIceConnectionState)newState{

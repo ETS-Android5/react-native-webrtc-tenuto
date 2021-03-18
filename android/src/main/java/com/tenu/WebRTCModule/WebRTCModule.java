@@ -724,11 +724,11 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
 
     //FLAG: 직접 만든 코드 버전 쓰리
     @ReactMethod
-    public void peerConnectionAddTrackV3(int id, String trackId, Callback callback){
-        ThreadUtils.runOnExecutor(() -> peerConnectionAddTrackAsyncV3(id, trackId, callback));
+    public void peerConnectionAddTrack(int id, String trackId, Callback callback){
+        ThreadUtils.runOnExecutor(() -> peerConnectionAddTrackAsync(id, trackId, callback));
     }
 
-    private void peerConnectionAddTrackAsyncV3(int id, String trackId, Callback callback){
+    private void peerConnectionAddTrackAsync(int id, String trackId, Callback callback){
         // 0. 해당하는 peerConnection 찾기
         PeerConnectionObserver pco = mPeerConnectionObservers.get(id);
         // 0. track 찾기
@@ -814,12 +814,12 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
 
     //FLAG webrtc2를 보고 추가한 코드
     @ReactMethod
-    public void peerConnectionAddTrack(String trackId, int id, Callback callback) {
+    public void peerConnectionAddTrackV1(String trackId, int id, Callback callback) {
         ThreadUtils.runOnExecutor(() ->
-                peerConnectionAddTrackAsync(trackId, id, callback));
+                peerConnectionAddTrackAsyncV1(trackId, id, callback));
     }
 
-    private void peerConnectionAddTrackAsync(String trackId, int id, Callback callback) {
+    private void peerConnectionAddTrackAsyncV1(String trackId, int id, Callback callback) {
         PeerConnectionObserver pco = mPeerConnectionObservers.get(id);
         if (pco != null) {
             if (pco.isUnifiedPlan == true) {
@@ -1348,6 +1348,7 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
             case "inactive":
                 return RtpTransceiver.RtpTransceiverDirection.INACTIVE;
         }
+        Log.d(TAG, "parseDirection: not found: "+ src);
         throw new Error("Invalid direction");
     }
 
@@ -1366,7 +1367,8 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
                 ReadableArray rawStreamIds = map.getArray("streamIds");
                 if (rawStreamIds != null) {
                     for (int i = 0; i < rawStreamIds.size(); i++) {
-                        streamIds.add(rawStreamIds.getString(i));
+                        String sId = rawStreamIds.getString(i);
+                        streamIds.add(sId);
                     }
                 }
             }
@@ -1451,7 +1453,9 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
                     return;
                 }
                 MediaStreamTrack track = getTrack(trackId);
-                transceiverId = pco.addTransceiver(track, parseTransceiverOptions(options.getMap("init")));
+
+                RtpTransceiver.RtpTransceiverInit myOptions = parseTransceiverOptions(options.getMap("init"));
+                transceiverId = pco.addTransceiver(track, myOptions);
             } else {
                 callback.invoke(false, "invalid trackId and type");
                 return;

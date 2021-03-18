@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 /*
  * 2에서 추가로 구현한 함수들
  * RTCPeerConnection.addTransceiver()
@@ -12,83 +12,83 @@
  * RTCRtpSender.replaceTrack
  * RTCRtpReceiver.track
  * */
-import EventTarget from 'event-target-shim';
-import {NativeModules, NativeEventEmitter} from 'react-native';
+import EventTarget from "event-target-shim";
+import { NativeModules, NativeEventEmitter } from "react-native";
 
-import MediaStream from './MediaStream';
-import MediaStreamEvent from './MediaStreamEvent';
-import MediaStreamTrack from './MediaStreamTrack';
-import MediaStreamTrackEvent from './MediaStreamTrackEvent';
-import RTCDataChannel from './RTCDataChannel';
-import RTCDataChannelEvent from './RTCDataChannelEvent';
-import RTCSessionDescription from './RTCSessionDescription';
-import RTCIceCandidate from './RTCIceCandidate';
-import RTCIceCandidateEvent from './RTCIceCandidateEvent';
-import RTCEvent from './RTCEvent';
-import RTCRtpTransceiver from './RTCRtpTransceiver';
-import RTCRtpSender from './RTCRtpSender';
-import RtpSender from './RTCRtpSenderTemp'; // FLAG: TODO: 이건 수정해야함. .
-import * as RTCUtil from './RTCUtil';
-import EventEmitter from './EventEmitter';
+import MediaStream from "./MediaStream";
+import MediaStreamEvent from "./MediaStreamEvent";
+import MediaStreamTrack from "./MediaStreamTrack";
+import MediaStreamTrackEvent from "./MediaStreamTrackEvent";
+import RTCDataChannel from "./RTCDataChannel";
+import RTCDataChannelEvent from "./RTCDataChannelEvent";
+import RTCSessionDescription from "./RTCSessionDescription";
+import RTCIceCandidate from "./RTCIceCandidate";
+import RTCIceCandidateEvent from "./RTCIceCandidateEvent";
+import RTCEvent from "./RTCEvent";
+import RTCRtpTransceiver from "./RTCRtpTransceiver";
+import RTCRtpSender from "./RTCRtpSender";
+import RtpSender from "./RTCRtpSenderTemp"; // FLAG: TODO: 이건 수정해야함. .
+import * as RTCUtil from "./RTCUtil";
+import EventEmitter from "./EventEmitter";
 
-const {WebRTCModule} = NativeModules;
+const { WebRTCModule } = NativeModules;
 
 type RTCSignalingState =
-  | 'stable'
-  | 'have-local-offer'
-  | 'have-remote-offer'
-  | 'have-local-pranswer'
-  | 'have-remote-pranswer'
-  | 'closed';
+  | "stable"
+  | "have-local-offer"
+  | "have-remote-offer"
+  | "have-local-pranswer"
+  | "have-remote-pranswer"
+  | "closed";
 
-type RTCIceGatheringState = 'new' | 'gathering' | 'complete';
+type RTCIceGatheringState = "new" | "gathering" | "complete";
 
 type RTCPeerConnectionState =
-  | 'new'
-  | 'connecting'
-  | 'connected'
-  | 'disconnected'
-  | 'failed'
-  | 'closed';
+  | "new"
+  | "connecting"
+  | "connected"
+  | "disconnected"
+  | "failed"
+  | "closed";
 
 type RTCIceConnectionState =
-  | 'new'
-  | 'checking'
-  | 'connected'
-  | 'completed'
-  | 'failed'
-  | 'disconnected'
-  | 'closed';
+  | "new"
+  | "checking"
+  | "connected"
+  | "completed"
+  | "failed"
+  | "disconnected"
+  | "closed";
 
 const PEER_CONNECTION_EVENTS = [
-  'connectionstatechange',
-  'icecandidate',
-  'icecandidateerror',
-  'iceconnectionstatechange',
-  'icegatheringstatechange',
-  'negotiationneeded',
-  'signalingstatechange',
+  "connectionstatechange",
+  "icecandidate",
+  "icecandidateerror",
+  "iceconnectionstatechange",
+  "icegatheringstatechange",
+  "negotiationneeded",
+  "signalingstatechange",
   // Peer-to-peer Data API:
-  'datachannel',
+  "datachannel",
   // old:
-  'addstream',
-  'removestream',
+  "addstream",
+  "removestream",
   // new:
-  'track', //FLAG: 2에 있어서 조금 바꾸면서 추가함
+  "track", //FLAG: 2에 있어서 조금 바꾸면서 추가함
 ];
 
 let nextPeerConnectionId = 0;
 
 export default class RTCPeerConnection extends EventTarget(
-  PEER_CONNECTION_EVENTS,
+  PEER_CONNECTION_EVENTS
 ) {
   localDescription: RTCSessionDescription;
   remoteDescription: RTCSessionDescription;
 
-  signalingState: RTCSignalingState = 'stable';
-  iceGatheringState: RTCIceGatheringState = 'new';
-  connectionState: RTCPeerConnectionState = 'new';
-  iceConnectionState: RTCIceConnectionState = 'new';
+  signalingState: RTCSignalingState = "stable";
+  iceGatheringState: RTCIceGatheringState = "new";
+  connectionState: RTCPeerConnectionState = "new";
+  iceConnectionState: RTCIceConnectionState = "new";
 
   onconnectionstatechange: ?Function;
   onicecandidate: ?Function;
@@ -148,7 +148,7 @@ export default class RTCPeerConnection extends EventTarget(
           } else {
             reject(data);
           }
-        },
+        }
       );
       this._localStreams.push(stream);
     });
@@ -162,28 +162,28 @@ export default class RTCPeerConnection extends EventTarget(
     this._localStreams.splice(index, 1);
     WebRTCModule.peerConnectionRemoveStream(
       stream._reactTag,
-      this._peerConnectionId,
+      this._peerConnectionId
     );
   }
 
-  addTransceiver(source: 'audio' | 'video' | MediaStreamTrack, init) {
+  addTransceiver(source: "audio" | "video" | MediaStreamTrack, init) {
     //TODO: FLAG: 2꺼 다시 보고 FIX하기
     return new Promise((resolve, reject) => {
       // console.log('RTCPeerConnection: addTransceiver');
       let src;
-      if (source === 'audio') {
-        src = {type: 'audio'};
-      } else if (source === 'video') {
-        src = {type: 'video'};
+      if (source === "audio") {
+        src = { type: "audio" };
+      } else if (source === "video") {
+        src = { type: "video" };
       } else {
-        src = {trackId: source.id}; //FLAG: 이부분에 오타있어서 수정함.
+        src = { trackId: source.id }; //FLAG: 이부분에 오타있어서 수정함.
       }
 
       WebRTCModule.peerConnectionAddTransceiver(
         this._peerConnectionId,
         {
           ...src,
-          init: {...init},
+          init: { ...init },
         },
         (successful, data) => {
           if (successful) {
@@ -194,7 +194,7 @@ export default class RTCPeerConnection extends EventTarget(
             // console.log('RTCPeerConnection: addTransceiver Rejecting');
             reject(data);
           }
-        },
+        }
       );
     });
   }
@@ -205,12 +205,12 @@ export default class RTCPeerConnection extends EventTarget(
     return new Promise((resolve, reject) => {
       // console.log("Add Track Called", track.kind);
       let sender = this._senders.find(
-        (sender) => sender.track && sender.track().id === track.id,
+        (sender) => sender.track && sender.track().id === track.id
       );
       if (sender !== undefined) {
         return;
       }
-      WebRTCModule.peerConnectionAddTrack(
+      WebRTCModule.peerConnectionAddTrackV1(
         track.id,
         this._peerConnectionId,
         (successful, data) => {
@@ -230,7 +230,7 @@ export default class RTCPeerConnection extends EventTarget(
           } else {
             reject(data);
           }
-        },
+        }
       );
     });
   }
@@ -240,16 +240,16 @@ export default class RTCPeerConnection extends EventTarget(
     return new Promise((resolve, reject) => {
       // 1. pc가 close인지 확인
       if (this.isClosed) {
-        reject('InvalidStateError: PC is Closed');
+        reject("InvalidStateError: PC is Closed");
       }
 
       // 2. track을 더해줄 transceiver를 찾는다.
       const transceivers = this.getTransceivers();
       const existing = transceivers.find(
-        (t) => t.sender.track == null && t.kind === track.kind,
+        (t) => t.sender.track == null && t.kind === track.kind
       );
       if (existing) {
-        WebRTCModule.peerConnectionAddTrackV3(
+        WebRTCModule.peerConnectionAddTrack(
           this._peerConnectionId,
           track.id,
           (successful, data) => {
@@ -263,7 +263,7 @@ export default class RTCPeerConnection extends EventTarget(
                 remote: data.track.remote,
               };
               if (!data.reuse) {
-                console.warn('existing이면 reuse는 반드시 True여야할텐데');
+                console.warn("existing이면 reuse는 반드시 True여야할텐데");
               }
               existing.sender.id = data.id;
               existing.sender.track = new MediaStreamTrack(trackInfo);
@@ -272,11 +272,11 @@ export default class RTCPeerConnection extends EventTarget(
             } else {
               reject(data);
             }
-          },
+          }
         );
       } else {
         // console.log("NOT EXISTING");
-        reject('No Transceiver exists');
+        reject("No Transceiver exists");
         // 다른 라이브러리에서는 자동으로 이걸 추가해주기도 하는 것 같다. 하지만 일단 TenuClient에서는 addTransceiver를 하고 나서 동작하기 때문에! 이럴 일이 없을 것..
       }
     });
@@ -298,7 +298,7 @@ export default class RTCPeerConnection extends EventTarget(
             theSender.stop();
           }
           resolve(successful);
-        },
+        }
       );
     });
   }
@@ -317,7 +317,7 @@ export default class RTCPeerConnection extends EventTarget(
             this._senders.splice(index, 1);
           }
           resolve(successful);
-        },
+        }
       );
     });
   }
@@ -345,7 +345,7 @@ export default class RTCPeerConnection extends EventTarget(
           } else {
             reject(data); // TODO: convert to NavigatorUserMediaError
           }
-        },
+        }
       );
     });
   }
@@ -362,7 +362,7 @@ export default class RTCPeerConnection extends EventTarget(
           } else {
             reject(data);
           }
-        },
+        }
       );
     });
   }
@@ -370,7 +370,7 @@ export default class RTCPeerConnection extends EventTarget(
   setConfiguration(configuration) {
     WebRTCModule.peerConnectionSetConfiguration(
       configuration,
-      this._peerConnectionId,
+      this._peerConnectionId
     );
   }
 
@@ -389,7 +389,7 @@ export default class RTCPeerConnection extends EventTarget(
           } else {
             reject(data);
           }
-        },
+        }
       );
     });
   }
@@ -409,7 +409,7 @@ export default class RTCPeerConnection extends EventTarget(
           } else {
             reject(data);
           }
-        },
+        }
       );
     });
   }
@@ -421,13 +421,13 @@ export default class RTCPeerConnection extends EventTarget(
         this._peerConnectionId,
         (successful) => {
           if (successful) {
-            console.log('candidate added');
+            console.log("candidate added");
             resolve();
           } else {
             // XXX: This should be OperationError
-            reject(new Error('Failed to add ICE candidate'));
+            reject(new Error("Failed to add ICE candidate"));
           }
-        },
+        }
       );
     });
   }
@@ -447,7 +447,7 @@ export default class RTCPeerConnection extends EventTarget(
                  the sender/receiver
                  */
         return new Map(JSON.parse(data));
-      },
+      }
     );
   }
 
@@ -470,7 +470,7 @@ export default class RTCPeerConnection extends EventTarget(
 
   _getTrack(streamReactTag, trackId): MediaStreamTrack {
     const stream = this._remoteStreams.find(
-      (stream) => stream._reactTag === streamReactTag,
+      (stream) => stream._reactTag === streamReactTag
     );
 
     return stream && stream._tracks.find((track) => track.id === trackId);
@@ -487,7 +487,7 @@ export default class RTCPeerConnection extends EventTarget(
     } else {
       // console.log('NN');
       let res = new RTCRtpTransceiver(this._peerConnectionId, state, (s) =>
-        this._mergeState(s),
+        this._mergeState(s)
       );
       this._transceivers.push(res);
       return res;
@@ -507,7 +507,7 @@ export default class RTCPeerConnection extends EventTarget(
       }
       // Restore Order
       this._transceivers = this._transceivers.map((t, i) =>
-        this._transceivers.find((t2) => t2.id === state.transceivers[i].id),
+        this._transceivers.find((t2) => t2.id === state.transceivers[i].id)
       );
     }
   }
@@ -520,42 +520,42 @@ export default class RTCPeerConnection extends EventTarget(
 
   _registerEvents(): void {
     this._subscriptions = [
-      EventEmitter.addListener('peerConnectionOnRenegotiationNeeded', (ev) => {
+      EventEmitter.addListener("peerConnectionOnRenegotiationNeeded", (ev) => {
         if (ev.id !== this._peerConnectionId) {
           return;
         }
-        this.dispatchEvent(new RTCEvent('negotiationneeded'));
+        this.dispatchEvent(new RTCEvent("negotiationneeded"));
       }),
-      EventEmitter.addListener('peerConnectionIceConnectionChanged', (ev) => {
+      EventEmitter.addListener("peerConnectionIceConnectionChanged", (ev) => {
         if (ev.id !== this._peerConnectionId) {
           return;
         }
         this.iceConnectionState = ev.iceConnectionState;
-        this.dispatchEvent(new RTCEvent('iceconnectionstatechange'));
-        if (ev.iceConnectionState === 'closed') {
+        this.dispatchEvent(new RTCEvent("iceconnectionstatechange"));
+        if (ev.iceConnectionState === "closed") {
           // This PeerConnection is done, clean up event handlers.
           this._unregisterEvents();
         }
       }),
-      EventEmitter.addListener('peerConnectionStateChanged', (ev) => {
+      EventEmitter.addListener("peerConnectionStateChanged", (ev) => {
         if (ev.id !== this._peerConnectionId) {
           return;
         }
         this.connectionState = ev.connectionState;
-        this.dispatchEvent(new RTCEvent('connectionstatechange'));
-        if (ev.connectionState === 'closed') {
+        this.dispatchEvent(new RTCEvent("connectionstatechange"));
+        if (ev.connectionState === "closed") {
           // This PeerConnection is done, clean up event handlers.
           this._unregisterEvents();
         }
       }),
-      EventEmitter.addListener('peerConnectionSignalingStateChanged', (ev) => {
+      EventEmitter.addListener("peerConnectionSignalingStateChanged", (ev) => {
         if (ev.id !== this._peerConnectionId) {
           return;
         }
         this.signalingState = ev.signalingState;
-        this.dispatchEvent(new RTCEvent('signalingstatechange'));
+        this.dispatchEvent(new RTCEvent("signalingstatechange"));
       }),
-      EventEmitter.addListener('peerConnectionAddedTrack', (ev) => {
+      EventEmitter.addListener("peerConnectionAddedTrack", (ev) => {
         // console.warn('peerConnectionAddedTrack event listened');
         if (ev.id !== this._peerConnectionId) {
           // console.warn('ev.id !== this._peerConnectionId', ev.id, this._peerConnectionId);
@@ -568,19 +568,22 @@ export default class RTCPeerConnection extends EventTarget(
         // console.log('stream1: ', JSON.stringify(stream1));
         const stream = new MediaStream(stream1);
         this.dispatchEvent(
-          new MediaStreamTrackEvent('track', {track: track, streams: [stream]}),
+          new MediaStreamTrackEvent("track", {
+            track: track,
+            streams: [stream],
+          })
         );
       }),
-      EventEmitter.addListener('peerConnectionAddedStream', (ev) => {
+      EventEmitter.addListener("peerConnectionAddedStream", (ev) => {
         if (ev.id !== this._peerConnectionId) {
           return;
         }
         const stream = new MediaStream(ev);
         // console.log('in RTCPeerConnection, addedStream: ', stream)
         this._remoteStreams.push(stream);
-        this.dispatchEvent(new MediaStreamEvent('addstream', {stream}));
+        this.dispatchEvent(new MediaStreamEvent("addstream", { stream }));
       }),
-      EventEmitter.addListener('peerConnectionRemovedStream', (ev) => {
+      EventEmitter.addListener("peerConnectionRemovedStream", (ev) => {
         if (ev.id !== this._peerConnectionId) {
           return;
         }
@@ -593,40 +596,40 @@ export default class RTCPeerConnection extends EventTarget(
           }
         }
         // console.log('in RTCPeerConnection, removedStream: RES', stream);
-        this.dispatchEvent(new MediaStreamEvent('removestream', {stream}));
+        this.dispatchEvent(new MediaStreamEvent("removestream", { stream }));
       }),
-      EventEmitter.addListener('mediaStreamTrackMuteChanged', (ev) => {
+      EventEmitter.addListener("mediaStreamTrackMuteChanged", (ev) => {
         if (ev.peerConnectionId !== this._peerConnectionId) {
           return;
         }
         const track = this._getTrack(ev.streamReactTag, ev.trackId);
         if (track) {
           track.muted = ev.muted;
-          const eventName = ev.muted ? 'mute' : 'unmute';
-          track.dispatchEvent(new MediaStreamTrackEvent(eventName, {track}));
+          const eventName = ev.muted ? "mute" : "unmute";
+          track.dispatchEvent(new MediaStreamTrackEvent(eventName, { track }));
         }
       }),
-      EventEmitter.addListener('peerConnectionGotICECandidate', (ev) => {
+      EventEmitter.addListener("peerConnectionGotICECandidate", (ev) => {
         if (ev.id !== this._peerConnectionId) {
           return;
         }
         const candidate = new RTCIceCandidate(ev.candidate);
-        const event = new RTCIceCandidateEvent('icecandidate', {candidate});
+        const event = new RTCIceCandidateEvent("icecandidate", { candidate });
         this.dispatchEvent(event);
       }),
-      EventEmitter.addListener('peerConnectionIceGatheringChanged', (ev) => {
+      EventEmitter.addListener("peerConnectionIceGatheringChanged", (ev) => {
         if (ev.id !== this._peerConnectionId) {
           return;
         }
         this.iceGatheringState = ev.iceGatheringState;
 
-        if (this.iceGatheringState === 'complete') {
-          this.dispatchEvent(new RTCIceCandidateEvent('icecandidate', null));
+        if (this.iceGatheringState === "complete") {
+          this.dispatchEvent(new RTCIceCandidateEvent("icecandidate", null));
         }
 
-        this.dispatchEvent(new RTCEvent('icegatheringstatechange'));
+        this.dispatchEvent(new RTCEvent("icegatheringstatechange"));
       }),
-      EventEmitter.addListener('peerConnectionDidOpenDataChannel', (ev) => {
+      EventEmitter.addListener("peerConnectionDidOpenDataChannel", (ev) => {
         if (ev.id !== this._peerConnectionId) {
           return;
         }
@@ -636,13 +639,13 @@ export default class RTCPeerConnection extends EventTarget(
         // been deprecated in Chromium, and Google have decided (in 2015) to no
         // longer support them (in the face of multiple reported issues of
         // breakages).
-        if (typeof id !== 'number' || id === -1) {
+        if (typeof id !== "number" || id === -1) {
           return;
         }
         const channel = new RTCDataChannel(
           this._peerConnectionId,
           evDataChannel.label,
-          evDataChannel,
+          evDataChannel
         );
         // XXX webrtc::PeerConnection checked that id was not in use in its own
         // SID allocator before it invoked us. Additionally, its own SID
@@ -650,7 +653,7 @@ export default class RTCPeerConnection extends EventTarget(
         // (pretty) safe to update our RTCDataChannel.id allocator without
         // checking for ResourceInUse.
         this._dataChannelIds.add(id);
-        this.dispatchEvent(new RTCDataChannelEvent('datachannel', {channel}));
+        this.dispatchEvent(new RTCDataChannelEvent("datachannel", { channel }));
       }),
     ];
   }
@@ -669,13 +672,13 @@ export default class RTCPeerConnection extends EventTarget(
   createDataChannel(label: string, dataChannelDict?: ?RTCDataChannelInit) {
     let id;
     const dataChannelIds = this._dataChannelIds;
-    if (dataChannelDict && 'id' in dataChannelDict) {
+    if (dataChannelDict && "id" in dataChannelDict) {
       id = dataChannelDict.id;
-      if (typeof id !== 'number') {
-        throw new TypeError('DataChannel id must be a number: ' + id);
+      if (typeof id !== "number") {
+        throw new TypeError("DataChannel id must be a number: " + id);
       }
       if (dataChannelIds.has(id)) {
-        throw new ResourceInUse('DataChannel id already in use: ' + id);
+        throw new ResourceInUse("DataChannel id already in use: " + id);
       }
     } else {
       // Allocate a new id.
@@ -689,12 +692,12 @@ export default class RTCPeerConnection extends EventTarget(
       // Data Channel Establishment Protocol).
       for (id = 1; id < 65535 && dataChannelIds.has(id); ++id);
       // TODO Throw an error if no unused id is available.
-      dataChannelDict = Object.assign({id}, dataChannelDict);
+      dataChannelDict = Object.assign({ id }, dataChannelDict);
     }
     WebRTCModule.createDataChannel(
       this._peerConnectionId,
       label,
-      dataChannelDict,
+      dataChannelDict
     );
     dataChannelIds.add(id);
     return new RTCDataChannel(this._peerConnectionId, label, dataChannelDict);
