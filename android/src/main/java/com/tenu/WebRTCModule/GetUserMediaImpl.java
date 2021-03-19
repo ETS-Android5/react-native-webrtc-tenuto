@@ -213,8 +213,9 @@ class GetUserMediaImpl {
     }
 
     void mediaStreamTrackSetEnabled(String trackId, final boolean enabled) {
-        TrackPrivate track = tracks.get(trackId);
-        if (track != null && track.videoCaptureController != null) {
+        TrackPrivate private_ = tracks.get(trackId);
+        private_.track.setEnabled(enabled);
+        if (private_ != null && private_.videoCaptureController != null) {
             Log.d(TAG, "Native에서 이미 수행. 차라리 enable이 아니라 Mute에서 필요할 듯."); //FLAG: 아무것도 할 것 없음.
             // if (enabled) {
                 // track.videoCaptureController.startCapture();

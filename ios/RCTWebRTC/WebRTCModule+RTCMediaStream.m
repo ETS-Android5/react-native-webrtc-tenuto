@@ -270,13 +270,13 @@ RCT_EXPORT_METHOD(mediaStreamTrackSetEnabled:(nonnull NSString *)trackID : (BOOL
   RTCMediaStreamTrack *track = [self trackForId:trackID];
   if (track) {
     track.isEnabled = enabled;
-    if (track.captureController) {  // It could be a remote track!
-      if (enabled) {
-        [track.captureController startCapture];
-      } else {
-        [track.captureController stopCapture];
-      }
-    }
+//     if (track.captureController) {  // It could be a remote track!
+//       if (enabled) {
+//         [track.captureController startCapture];
+//       } else {
+//         [track.captureController stopCapture];
+//       }
+//     }
   }
 }
 
