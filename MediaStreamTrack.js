@@ -86,6 +86,10 @@ class MediaStreamTrack extends EventTarget(MEDIA_STREAM_TRACK_EVENTS) {
     WebRTCModule.mediaStreamTrackSwitchCamera(this.id);
   }
 
+  setFilter(filter) {
+    WebRTCModule.mediaStreamTrackSetFilter(this.id, filter);
+  }
+
   applyConstraints() {
     throw new Error('Not implemented.');
   }
