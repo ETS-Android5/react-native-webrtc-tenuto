@@ -12,10 +12,22 @@
 
 /* CIFilter Type */
 static NSString *const None = @"None";
-static NSString *const CIColorInvert = @"CIColorInvert";
-static NSString *const CIComicEffect = @"CIComicEffect";
+// Tone Change
 static NSString *const CISepiaTone = @"CISepiaTone";
+static NSString *const CIPhotoEffectFade = @"CIPhotoEffectFade";
+static NSString *const CIPhotoEffectInstant = @"CIPhotoEffectInstant";
+static NSString *const CIPhotoEffectMono = @"CIPhotoEffectMono";
+static NSString *const CIPhotoEffectNoir = @"CIPhotoEffectNoir";
+static NSString *const CIPhotoEffectProcess = @"CIPhotoEffectProcess";
+static NSString *const CIPhotoEffectTonal = @"CIPhotoEffectTonal";
+// Various effect
+static NSString *const CIBloom = @"CIBloom";
+static NSString *const CIGloom = @"CIGloom";
+static NSString *const CICrystallize = @"CICrystallize";
 static NSString *const CIEdgeWork = @"CIEdgeWork";
+static NSString *const CIComicEffect = @"CIComicEffect";
+static NSString *const CIColorPosterize = @"CIColorPosterize";
+static NSString *const CIColorInvert = @"CIColorInvert";
 
 @interface VideoCaptureController : CaptureController<RTCVideoCapturerDelegate>
 

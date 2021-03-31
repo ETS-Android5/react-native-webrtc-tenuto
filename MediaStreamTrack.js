@@ -86,6 +86,18 @@ class MediaStreamTrack extends EventTarget(MEDIA_STREAM_TRACK_EVENTS) {
     WebRTCModule.mediaStreamTrackSwitchCamera(this.id);
   }
 
+  /**
+   * Filter Effect for Local Video Track
+   * pass filter type through a parameter "string:filter"
+   *
+   * [filter types for iOS]
+   * Tone Change: "CISepiaTone", "CIPhotoEffectFade", "CIPhotoEffectInstant", "CIPhotoEffectMono", "CIPhotoEffectNoir",
+   *              "CIPhotoEffectProcess", "CIPhotoEffectTonal"
+   * Various Effect: "CIEdgeWork", "CIComicEffect", "CIColorPosterize", "CIColorInvert"
+   * (+) Upcoming: "CIBloom", "CIGloom", "CICrystallize"
+   *
+   * Filter type will be updated often.
+  * */
   setFilter(filter) {
     WebRTCModule.mediaStreamTrackSetFilter(this.id, filter);
   }
