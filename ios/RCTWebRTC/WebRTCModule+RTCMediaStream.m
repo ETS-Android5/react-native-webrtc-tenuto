@@ -16,6 +16,8 @@
 
 #import "ScreenCapturer.h"
 #import "ScreenCaptureController.h"
+
+#import "VideoCapturer.h"
 #import "VideoCaptureController.h"
 
 @implementation WebRTCModule (RTCMediaStream)
@@ -39,22 +41,23 @@
  * Initializes a new {@link RTCVideoTrack} which satisfies the given constraints.
  */
 - (RTCVideoTrack *)createVideoTrack:(NSDictionary *)constraints {
-  RTCVideoSource *videoSource = [self.peerConnectionFactory videoSource];
+    RTCVideoSource *videoSource = [self.peerConnectionFactory videoSource];
 
-  NSString *trackUUID = [[NSUUID UUID] UUIDString];
-  RTCVideoTrack *videoTrack = [self.peerConnectionFactory videoTrackWithSource:videoSource trackId:trackUUID];
+    NSString *trackUUID = [[NSUUID UUID] UUIDString];
+    RTCVideoTrack *videoTrack = [self.peerConnectionFactory videoTrackWithSource:videoSource trackId:trackUUID];
 
-#if !TARGET_IPHONE_SIMULATOR
-  RTCCameraVideoCapturer *videoCapturer = [[RTCCameraVideoCapturer alloc] initWithDelegate:videoSource];
-  // RCTLogTrace(@"===========createVideoTrack: %@", constraints);
-  VideoCaptureController *videoCaptureController
-        = [[VideoCaptureController alloc] initWithCapturer:videoCapturer
-                                            andConstraints:constraints[@"video"]];
-  videoTrack.captureController = videoCaptureController;
-  [videoCaptureController startCapture];
-#endif
+  #if !TARGET_IPHONE_SIMULATOR
+    VideoCapturer *videoCapturer = [[VideoCapturer alloc] initWithDelegate:videoSource];
+    // RCTLogTrace(@"===========createVideoTrack: %@", constraints);
+    VideoCaptureController *videoCaptureController
+      = [[VideoCaptureController alloc] initWithCapturer:videoCapturer
+                                          andConstraints:constraints[@"video"]];
+    videoCapturer.delegate = videoCaptureController;             // 여기
+    videoTrack.captureController = videoCaptureController;
+    [videoCaptureController startCapture];
+  #endif
 
-  return videoTrack;
+    return videoTrack;
 }
 
 - (RTCVideoTrack *)createScreenCaptureVideoTrack {
@@ -287,6 +290,13 @@ RCT_EXPORT_METHOD(mediaStreamTrackSwitchCamera:(nonnull NSString *)trackID)
     RTCVideoTrack *videoTrack = (RTCVideoTrack *)track;
     [(VideoCaptureController *)videoTrack.captureController switchCamera];
   }
+}
+
+RCT_EXPORT_METHOD(mediaStreamTrackSetFilter: (nonnull NSString *)trackID filterType: (nonnull NSString *) filterType){
+    RTCMediaStreamTrack *track = self.localTracks[trackID];
+    if (track) {
+        [(VideoCaptureController *)track.captureController setFilter:filterType];
+    }
 }
 
 #pragma mark - Helpers

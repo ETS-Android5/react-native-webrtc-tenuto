@@ -170,7 +170,7 @@ typedef NS_ENUM(NSInteger, RTCVideoViewObjectFit) {
 
     _videoSize.height = 0;
     _videoSize.width = 0;
-
+    self.videoView.layer.shadowPath = [UIBezierPath bezierPathWithRect:self.videoView.bounds].CGPath;
 
     #if !TARGET_OS_OSX
             self.opaque = NO;
@@ -410,6 +410,7 @@ RCT_CUSTOM_VIEW_PROPERTY(streamURL, NSString *, RTCVideoView) {
             RCTLogWarn(@"No video stream for react tag: %@", streamReactTag);
         } else {
             dispatch_async(dispatch_get_main_queue(), ^{
+                view.layer.shadowPath = [UIBezierPath bezierPathWithRect:view.bounds].CGPath;
                 view.videoTrack = videoTrack;
             });
         }
