@@ -1,3 +1,9 @@
+//
+//  VideoCaptureController.h
+//  RCTWebRTC
+//
+//  Created by 홍은지(Eunji Hong) on 2021/03/31.
+//
 
 #import <Foundation/Foundation.h>
 #import <WebRTC/RTCCameraVideoCapturer.h>
