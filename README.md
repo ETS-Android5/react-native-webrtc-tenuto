@@ -1,6 +1,6 @@
 This project is originated from react-native-webrtc
 
-- version: 2.0.3
+- version: 2.0.4
 
 # react-native-webrtc
 

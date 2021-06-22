@@ -747,11 +747,11 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
             }
             // 2. isUnifiedPlan인지
             if(pco.isUnifiedPlan == true){
-                RtpSender sender = null; // 반환할 sender. 
+                RtpSender sender = null; // 반환할 sender.
                 // 3. 이미 전송하고 있는 track인지 확인
                 for (RtpSender rtpSender : pco.getPeerConnection().getSenders()) {
                     if (rtpSender.track() != null) {
-                        if (rtpSender.track().id().equalsIgnoreCase(trackId)) { // 
+                        if (rtpSender.track().id().equalsIgnoreCase(trackId)) { //
                             sender = rtpSender;
                             Log.d(TAG, "이미 전송중인 Track 입니당");
                             break;
@@ -1354,6 +1354,7 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
 
     private RtpTransceiver.RtpTransceiverInit parseTransceiverOptions(ReadableMap map) {
         RtpTransceiver.RtpTransceiverDirection direction = RtpTransceiver.RtpTransceiverDirection.SEND_RECV;
+        List<RtpParameters.Encoding> sendEncodings = new ArrayList<>();
         ArrayList<String> streamIds = new ArrayList<>();
         if (map != null) {
             if (map.hasKey("direction")) {
@@ -1372,9 +1373,24 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
                     }
                 }
             }
-        }
 
-        return new RtpTransceiver.RtpTransceiverInit(direction, streamIds);
+            if (map.hasKey("sendEncodings")){
+                ReadableArray rawSendEncodings = map.getArray("sendEncodings");
+                for (int i=0;i< rawSendEncodings.size();i++){
+                    ReadableMap params = rawSendEncodings.getMap(i);
+                    sendEncodings.add(0, mapToEncoding(params));
+                }
+            }
+        }
+        if (map != null){
+            if (map.hasKey("sendEncodings")){
+                return new RtpTransceiver.RtpTransceiverInit(direction ,streamIds, sendEncodings);
+            } else {
+                return new RtpTransceiver.RtpTransceiverInit(direction, streamIds);
+            }
+        } else {
+            return new RtpTransceiver.RtpTransceiverInit(direction, streamIds);
+        }
     }
 
     private ReadableMap serializeTrack(MediaStreamTrack track) {
@@ -1593,7 +1609,7 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
         }
     }
 
-    //FLAG: Added. 
+    //FLAG: Added.
     @ReactMethod
     public void peerConnectionSenderGetParameters(int id, String senderId, final Callback callback) {
         // 궁금증: 다 Async해야할까?
@@ -1628,5 +1644,41 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
             callback.invoke(false, "peerConnection is null");
             return;
         }
+    }
+
+
+
+    private RtpParameters.Encoding mapToEncoding(ReadableMap parameters) {
+        RtpParameters.Encoding encoding = new RtpParameters.Encoding((String)parameters.getString("rid"), true, 1.0);
+
+        if( parameters.hasKey("active")) {
+            encoding.active = parameters.getBoolean("active");
+        }
+
+        if( parameters.hasKey("ssrc")) {
+            encoding.ssrc = ((Double)parameters.getDouble("ssrc")).longValue();
+        }
+
+        if( parameters.hasKey("minBitrate")) {
+            encoding.minBitrateBps = parameters.getInt("minBitrate");
+        }
+
+        if( parameters.hasKey("maxBitrate")) {
+            encoding.maxBitrateBps = parameters.getInt("maxBitrate");
+        }
+
+        if( parameters.hasKey("maxFramerate")) {
+            encoding.maxFramerate = parameters.getInt("maxFramerate");
+        }
+
+        if( parameters.hasKey("numTemporalLayers")) {
+            encoding.numTemporalLayers = parameters.getInt("numTemporalLayers");
+        }
+
+        if( parameters.hasKey("scaleResolutionDownBy")) {
+            encoding.scaleResolutionDownBy = parameters.getDouble("scaleResolutionDownBy");
+        }
+
+        return  encoding;
     }
 }
