@@ -893,6 +893,7 @@ RCT_EXPORT_METHOD(getTrackVolumes:(RCTResponseSenderBlock)callback)
 //             streamReactTag = [[NSUUID UUID] UUIDString];
             peerConnection.remoteStreams[streamReactTag] = stream;
         }else{ //1.1 존재하면 streamReactTag 가져오기
+            peerConnection.remoteStreams[streamReactTag] = stream; //TODO: FLAG 이미 stream이 있을 때 덮어씌우는건데, 이래도 괜찮은지 모르겠음. QA 빡세게하기! (AUdio -> Video, Video -> Audio, AV -> AV 등)
             RCTLogTrace(@"didAddTrack, yes streamReactTag");
         }
         //2. 만들어진 stream(stream property+streamReactTag)를 map해서 반환에 알맞은 형태로 만들고, streams 배열에 넣는다.
