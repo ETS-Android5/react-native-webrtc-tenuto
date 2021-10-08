@@ -169,7 +169,7 @@ export default class RTCPeerConnection extends EventTarget(
   addTransceiver(source: "audio" | "video" | MediaStreamTrack, init) {
     //TODO: FLAG: 2꺼 다시 보고 FIX하기
     return new Promise((resolve, reject) => {
-      // console.log('RTCPeerConnection: addTransceiver');
+      console.log('RTCPeerConnection: addTransceiver');
       let src;
       if (source === "audio") {
         src = { type: "audio" };
@@ -187,11 +187,11 @@ export default class RTCPeerConnection extends EventTarget(
         },
         (successful, data) => {
           if (successful) {
-            // console.log('RTCPeerConnection: addTransceiver Successful');
+            console.log('RTCPeerConnection: addTransceiver Successful');
             this._mergeState(data.state);
             resolve(this._transceivers.find((v) => v.id === data.id));
           } else {
-            // console.log('RTCPeerConnection: addTransceiver Rejecting');
+            console.log('RTCPeerConnection: addTransceiver Rejecting');
             reject(data);
           }
         }
@@ -503,6 +503,7 @@ export default class RTCPeerConnection extends EventTarget(
     if (state.transceivers) {
       // Apply states
       for (let transceiver of state.transceivers) {
+        console.log("transceiver: "+JSON.stringify(transceiver))
         this._getTransceiver(transceiver);
       }
       // Restore Order

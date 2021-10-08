@@ -37,6 +37,7 @@ class MediaStreamTrack extends EventTarget(MEDIA_STREAM_TRACK_EVENTS) {
   constructor(info) {
     super();
 
+    // {"enabled": true, "id": "8bccacc3-2713-4415-8931-b2d94e64ce31", "kind": "video", "label": "8bccacc3-2713-4415-8931-b2d94e64ce31", "readyState": "live", "remote": true}
     this._constraints = info.constraints || {};
     this._enabled = info.enabled;
     this.id = info.id;
@@ -97,7 +98,7 @@ class MediaStreamTrack extends EventTarget(MEDIA_STREAM_TRACK_EVENTS) {
    * (+) Upcoming: "CIBloom", "CIGloom", "CICrystallize"
    *
    * Filter type will be updated often.
-  * */
+   * */
   setFilter(filter) {
     WebRTCModule.mediaStreamTrackSetFilter(this.id, filter);
   }

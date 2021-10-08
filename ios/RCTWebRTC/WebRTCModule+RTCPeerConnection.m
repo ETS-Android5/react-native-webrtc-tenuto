@@ -87,7 +87,12 @@ RCT_EXPORT_METHOD(peerConnectionInit:(RTCConfiguration*)configuration
                     peerConnectionWithConfiguration:configuration
                                         constraints:constraints
                                            delegate:self];
-    
+
+    if(peerConnection.configuration.sdpSemantics == RTCSdpSemanticsUnifiedPlan){
+        RCTLogTrace(@"peerConnectionInit =============================== peerConnection.configuration.sdpSemantics == RTCSdpSemanticsUnifiedPlan");
+    } else {
+        RCTLogTrace(@"peerConnectionInit =============================== peerConnection.configuration.sdpSemantics != RTCSdpSemanticsUnifiedPlan");
+    }
     peerConnection.dataChannels = [NSMutableDictionary new];
     peerConnection.reactTag = objectID;
     peerConnection.remoteStreams = [NSMutableDictionary new];
@@ -214,7 +219,7 @@ RCT_EXPORT_METHOD(peerConnectionAddTrack:(nonnull NSNumber *)objectID
         RCTLogTrace(@"peerConnectionAddTrack() is nil");
     }
     RTCRtpSender *sender = [peerConnection addTrack:track streamIds:<#(nonnull NSArray<NSString *> *)#>]
-    
+
     // 2. isUnifiedPlan인지
     if(peerConnection.configuration.sdpSemantics == RTCSdpSemanticsUnifiedPlan){
         // 3. 이미 전송하고 있는 track인지 확인
@@ -238,7 +243,7 @@ RCT_EXPORT_METHOD(peerConnectionAddTrack:(nonnull NSNumber *)objectID
                     }
                 }
             }
-            
+
         }
     }
     */
@@ -551,14 +556,14 @@ RCT_EXPORT_METHOD(getTrackVolumes:(RCTResponseSenderBlock)callback)
  */
 - (NSString *)statsToJSON:(RTCStatisticsReport *)report
 {
-  /* 
+  /*
   The initial capacity matters, of course, because it determines how many
   times the NSMutableString will have grow. But walking through the reports
   to compute an initial capacity which exactly matches the requirements of
   the reports is too much work without real-world bang here. An improvement
-  should be caching the required capacity from the previous invocation of the 
-  method and using it as the initial capacity in the next invocation. 
-  As I didn't want to go even through that,choosing just about any initial 
+  should be caching the required capacity from the previous invocation of the
+  method and using it as the initial capacity in the next invocation.
+  As I didn't want to go even through that,choosing just about any initial
   capacity is OK because NSMutableCopy doesn't have too bad a strategy of growing.
   */
   NSMutableString *s = [NSMutableString stringWithCapacity:16 * 1024];
@@ -571,7 +576,7 @@ RCT_EXPORT_METHOD(getTrackVolumes:(RCTResponseSenderBlock)callback)
     } else {
       [s appendString:@","];
     }
-  
+
     [s appendString:@"[\""];
     [s appendString: key];
     [s appendString:@"\",{"];
@@ -579,7 +584,7 @@ RCT_EXPORT_METHOD(getTrackVolumes:(RCTResponseSenderBlock)callback)
     RTCStatistics *statistics = report.statistics[key];
     [s appendString:@"\"timestamp\":"];
     [s appendFormat:@"%f", statistics.timestamp_us / 1000.0];
-    [s appendString:@",\"type\":\""]; 
+    [s appendString:@",\"type\":\""];
     [s appendString:statistics.type];
     [s appendString:@"\",\"id\":\""];
     [s appendString:statistics.id];
@@ -612,9 +617,9 @@ RCT_EXPORT_METHOD(getTrackVolumes:(RCTResponseSenderBlock)callback)
             [s appendString:@"\""];
         }
     }
-    
+
     [s appendString:@"}]"];
-  } 
+  }
 
   [s appendString:@"]"];
 
@@ -724,8 +729,8 @@ RCT_EXPORT_METHOD(getTrackVolumes:(RCTResponseSenderBlock)callback)
 - (void)peerConnection:(RTCPeerConnection *)peerConnection didAddStream:(RTCMediaStream *)stream {
     RCTLogTrace(@"didAddStream =============================== triggerred");
     // 괜히 streamReactTag를 만들어서 번거롭게 이런 절차가 필요함.
-    
-    // step1) 해당 stream이 이미 존재하는지 확인하는 부분. 
+
+    // step1) 해당 stream이 이미 존재하는지 확인하는 부분.
     // - didAddTrack 이벤트가 didAddStream보다 먼저 일어날지도 몰라서 이곳에서 처리.
     NSString *streamReactTag = nil;
     for (NSString *aReactTag in peerConnection.remoteStreams) {
@@ -735,7 +740,7 @@ RCT_EXPORT_METHOD(getTrackVolumes:(RCTResponseSenderBlock)callback)
             break;
         }
     }
-    
+
     // step2) 해당 stream이 이미 존재할 경우
     if(streamReactTag){
         NSMutableArray *tracks = [NSMutableArray array];
@@ -755,7 +760,7 @@ RCT_EXPORT_METHOD(getTrackVolumes:(RCTResponseSenderBlock)callback)
         peerConnection.remoteStreams[streamReactTag] = stream; // 중복 저장이지만 뭐 어때. 같은 객체라서 저장하는건데... 혹시 몰라서 overwrite하는 것. 근데 이러면 쓸데없는 자원 소모가 있는지 걱정임.
         /* Event Dispatch */
         [self.bridge.eventDispatcher sendDeviceEventWithName:@"peerConnectionAddedStream"
-                                        body:@{@"id":peerConnection.reactTag, 
+                                        body:@{@"id":peerConnection.reactTag,
                                                 @"streamId": stream.streamId,
                                                 @"streamReactTag": streamReactTag,
                                                 @"tracks": tracks
@@ -781,7 +786,7 @@ RCT_EXPORT_METHOD(getTrackVolumes:(RCTResponseSenderBlock)callback)
         peerConnection.remoteStreams[streamReactTag] = stream;
 
         [self.bridge.eventDispatcher sendDeviceEventWithName:@"peerConnectionAddedStream"
-                                        body:@{@"id":peerConnection.reactTag, 
+                                        body:@{@"id":peerConnection.reactTag,
                                                 @"streamId": stream.streamId,
                                                 @"streamReactTag": streamReactTag,
                                                 @"tracks": tracks
@@ -813,7 +818,7 @@ RCT_EXPORT_METHOD(getTrackVolumes:(RCTResponseSenderBlock)callback)
         [peerConnection.remoteTracks removeObjectForKey:track.trackId];
     }
     [peerConnection.remoteStreams removeObjectForKey:streamReactTag];
-    [self.bridge.eventDispatcher sendDeviceEventWithName:@"peerConnectionRemovedStream" 
+    [self.bridge.eventDispatcher sendDeviceEventWithName:@"peerConnectionRemovedStream"
                                 body:@{@"id": peerConnection.reactTag, @"streamId": stream.streamId}];
 }
 
@@ -898,14 +903,14 @@ RCT_EXPORT_METHOD(getTrackVolumes:(RCTResponseSenderBlock)callback)
         }
         //2. 만들어진 stream(stream property+streamReactTag)를 map해서 반환에 알맞은 형태로 만들고, streams 배열에 넣는다.
         NSDictionary* mappedStream = [self mediaStreamToMap:stream streamReactTag:streamReactTag];
-        
+
         [streams addObject:mappedStream];
     }
-    
+
     //3. receiver로부터 track을 만든다
     RTCMediaStreamTrack * track = rtpReceiver.track;
     //4. 반환쓰~
-    
+
     [self.bridge.eventDispatcher sendDeviceEventWithName:@"peerConnectionAddedTrack"
                                 body:@{
                          @"id": peerConnection.reactTag,
@@ -925,7 +930,7 @@ RCT_EXPORT_METHOD(getTrackVolumes:(RCTResponseSenderBlock)callback)
 - (void)peerConnection:(RTCPeerConnection *)peerConnection
 didChangeConnectionState:(RTCPeerConnectionState)newState {
     RCTLogTrace(@"didChangeConnectionState ============================ triggerred");
-    
+
     [self.bridge.eventDispatcher sendDeviceEventWithName:@"peerConnectionStateChanged"
                                 body:@{
                          @"id": peerConnection.reactTag,
@@ -936,14 +941,14 @@ didChangeConnectionState:(RTCPeerConnectionState)newState {
 
 - (void)peerConnection:(RTCPeerConnection *)peerConnection
 didChangeStandardizedIceConnectionState:(RTCIceConnectionState)newState{
-    
+
     RCTLogTrace(@"didChangeStandardizedIceConnectionState ============================ triggerred");
 }
 
 - (void)peerConnection:(RTCPeerConnection *)peerConnection
 didStartReceivingOnTransceiver:(RTCRtpTransceiver *)transceiver{
     RCTLogTrace(@"didStartReceivingOnTransceiver ============================ triggerred");
-    
+
 }
 
 
@@ -1017,7 +1022,7 @@ didStartReceivingOnTransceiver:(RTCRtpTransceiver *)transceiver{
     NSArray<NSString*>* streamIds = map[@"streamIds"];
     NSArray<NSDictionary*>* encodingsParams = map[@"sendEncodings"];
     NSString* direction = map[@"direction"];
-    
+
     RTCRtpTransceiverInit* init = [RTCRtpTransceiverInit alloc];
 
     if(direction != nil) {
@@ -1040,12 +1045,12 @@ didStartReceivingOnTransceiver:(RTCRtpTransceiver *)transceiver{
 
 // 종우가 넣음. from Flutter SDK 참고
 - (NSDictionary*)mediaStreamToMap:(RTCMediaStream *)stream streamReactTag:(NSString*)streamReactTag {
-    
+
     // 굳이 AudioTracks와 videoTrack를 나눌 필요가 있는감.
     //    NSMutableArray* audioTracks = [NSMutableArray array];
     //    NSMutableArray* videoTracks = [NSMutableArray array];
         NSMutableArray* tracks = [NSMutableArray array];
-    
+
     for (RTCMediaStreamTrack* track in stream.audioTracks) {
         //        [audioTracks addObject:[self mediaTrackToMap:track]];
         [tracks addObject:[self mediaTrackToMap:track]];
@@ -1111,27 +1116,27 @@ didStartReceivingOnTransceiver:(RTCRtpTransceiver *)transceiver{
     encoding.bitratePriority = 1.0;
 #endif
     [encoding setRid:map[@"rid"]];
-    
+
     if(map[@"active"] != nil) {
         [encoding setIsActive:((NSNumber*)map[@"active"]).boolValue];
     }
-    
+
     if(map[@"minBitrate"] != nil) {
         [encoding setMinBitrateBps:(NSNumber*)map[@"minBitrate"]];
     }
-    
+
     if(map[@"maxBitrate"] != nil) {
         [encoding setMaxBitrateBps:(NSNumber*)map[@"maxBitrate"]];
     }
-    
+
     if(map[@"maxFramerate"] != nil) {
         [encoding setMaxFramerate:(NSNumber*)map[@"maxFramerate"]];
     }
-    
+
     if(map[@"numTemporalLayers"] != nil) {
         [encoding setNumTemporalLayers:(NSNumber*)map[@"numTemporalLayers"]];
     }
-    
+
     if(map[@"scaleResolutionDownBy"] != nil) {
         [encoding setScaleResolutionDownBy:(NSNumber*)map[@"scaleResolutionDownBy"]];
     }

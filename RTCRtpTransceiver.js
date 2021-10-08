@@ -18,6 +18,7 @@ export default class RTCRtpTransceiver {
     _mergeState: Function;
 
     constructor(pcId, state, mergeState) {
+        // console.log("state.receiver.track:", state.receiver.track);
         this._peerConnectionId = pcId;
         this._id = state.id; // 이런게 어딨어.
         this._mid = state.mid ? state.mid : null;
@@ -25,8 +26,9 @@ export default class RTCRtpTransceiver {
         this._currentDirection = state.currentDirection;
         this._stopped = state.isStopped;
         this._mergeState = mergeState;
-        this.sender = new RTCRtpSender(pcId, this.id, null, null);
-        this._receiver = new RTCRtpReceiver(state.receiver.id, new MediaStreamTrack(state.receiver.track));
+        let track = new MediaStreamTrack(state.receiver.track);
+        this.sender = new RTCRtpSender(pcId, this._id, null, track); // 센치미터 수정
+        this._receiver = new RTCRtpReceiver(state.receiver.id, track);
     }
 
     // 임의로 추가 https://www.w3.org/TR/webrtc/#dfn-transceiver-kind

@@ -11,11 +11,12 @@ export default class RTCRtpSender {
     // _mergeState: Function;
     track: MediaStreamTrack;
 
-    params: RTCRtpParameters ; 
+    params: RTCRtpParameters ;
     constructor(pcId: number, _transceiverId: String, id: String, t: MediaStreamTrack) {
         this._peerConnectionId = pcId;
         this._transceiverId = _transceiverId;
         this.id = id;
+        // this.id = _transceiverId; // 센치미터 수정
         this.track = t;
     }
 
