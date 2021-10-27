@@ -13,7 +13,7 @@
  * RTCRtpReceiver.track
  * */
 import EventTarget from "event-target-shim";
-import { NativeModules, NativeEventEmitter } from "react-native";
+import {NativeModules} from "react-native";
 
 import MediaStream from "./MediaStream";
 import MediaStreamEvent from "./MediaStreamEvent";
@@ -503,7 +503,6 @@ export default class RTCPeerConnection extends EventTarget(
     if (state.transceivers) {
       // Apply states
       for (let transceiver of state.transceivers) {
-        console.log("transceiver: "+JSON.stringify(transceiver))
         this._getTransceiver(transceiver);
       }
       // Restore Order
@@ -518,6 +517,22 @@ export default class RTCPeerConnection extends EventTarget(
     this._subscriptions.forEach((e) => e.remove());
     this._subscriptions = [];
   }
+  _pushRemotestream(streamArg){
+    let streamId = streamArg.streamId ? streamArg.streamId : "";
+    let stream = this._remoteStreams.find(s => s.id === streamId)
+    if (stream) {
+      return stream;
+    }
+    stream = new MediaStream(streamArg);
+    this._remoteStreams.push(stream);
+    return stream;
+  }
+  _findStreamByTrackId(trackId): MediaStream{
+    return this._remoteStreams.find(s => {
+      return s.getTrackById(trackId);
+    });
+  }
+
 
   _registerEvents(): void {
     this._subscriptions = [
@@ -565,9 +580,7 @@ export default class RTCPeerConnection extends EventTarget(
         ev.id = ev.track.trackId;
         delete ev.track.trackId; // 이부분 뭔가 이상쓰~
         const track = new MediaStreamTrack(ev.track);
-        let stream1 = ev.streams[0];
-        // console.log('stream1: ', JSON.stringify(stream1));
-        const stream = new MediaStream(stream1);
+        const stream = this._pushRemotestream(ev.streams[0])
         this.dispatchEvent(
           new MediaStreamTrackEvent("track", {
             track: track,
@@ -579,9 +592,7 @@ export default class RTCPeerConnection extends EventTarget(
         if (ev.id !== this._peerConnectionId) {
           return;
         }
-        const stream = new MediaStream(ev);
-        // console.log('in RTCPeerConnection, addedStream: ', stream)
-        this._remoteStreams.push(stream);
+        const stream = this._pushRemotestream(ev)
         this.dispatchEvent(new MediaStreamEvent("addstream", { stream }));
       }),
       EventEmitter.addListener("peerConnectionRemovedStream", (ev) => {
@@ -598,6 +609,15 @@ export default class RTCPeerConnection extends EventTarget(
         }
         // console.log('in RTCPeerConnection, removedStream: RES', stream);
         this.dispatchEvent(new MediaStreamEvent("removestream", { stream }));
+      }),
+      EventEmitter.addListener("peerConnectionOnRemoveTrack", (ev) => { //임시추가
+        if (ev.id !== this._peerConnectionId) {
+          return;
+        }
+        const stream = this._findStreamByTrackId(ev.track.id);
+        if(stream){
+          stream.dispatchEvent(new RTCEvent("removetrack", {track: ev.track}));// {id, kind, label}
+        }
       }),
       EventEmitter.addListener("mediaStreamTrackMuteChanged", (ev) => {
         if (ev.peerConnectionId !== this._peerConnectionId) {

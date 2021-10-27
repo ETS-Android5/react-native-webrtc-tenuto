@@ -33,6 +33,7 @@ static NSString *const kEventDataChannelStateChanged = @"dataChannelStateChanged
 static NSString *const kEventDataChannelReceiveMessage = @"dataChannelReceiveMessage";
 static NSString *const kEventMediaStreamTrackMuteChanged = @"mediaStreamTrackMuteChanged";
 static NSString *const kEventPeerConnectionAddedTrack = @"peerConnectionAddedTrack";
+static NSString *const kEventPeerConnectionRemovedTrack = @"peerConnectionOnRemoveTrack";
 
 @interface WebRTCModule : RCTEventEmitter <RCTBridgeModule>
 

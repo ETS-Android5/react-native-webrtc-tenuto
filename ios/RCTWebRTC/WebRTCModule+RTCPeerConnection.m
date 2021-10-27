@@ -926,6 +926,22 @@ RCT_EXPORT_METHOD(getTrackVolumes:(RCTResponseSenderBlock)callback)
                        }];
 }
 
+// 임시구현
+/** Called when the receiver and its track are removed. */
+- (void)peerConnection:(RTCPeerConnection *)peerConnection
+     didRemoveReceiver:(RTCRtpReceiver *)rtpReceiver {
+     RTCMediaStreamTrack * track = rtpReceiver.track;
+    [self.bridge.eventDispatcher sendDeviceEventWithName:@"peerConnectionOnRemoveTrack"
+                                body:@{
+                         @"id": peerConnection.reactTag,
+                         @"track": @{
+                                 @"id": track.trackId,
+                                 @"kind":track.kind,
+                                 @"label": track.kind,
+                         }
+                       }];
+}
+
 /** Called any time the PeerConnectionState changes. */
 - (void)peerConnection:(RTCPeerConnection *)peerConnection
 didChangeConnectionState:(RTCPeerConnectionState)newState {
