@@ -572,7 +572,6 @@ export default class RTCPeerConnection extends EventTarget(
         this.dispatchEvent(new RTCEvent("signalingstatechange"));
       }),
       EventEmitter.addListener("peerConnectionAddedTrack", (ev) => {
-        // console.warn('peerConnectionAddedTrack event listened');
         if (ev.id !== this._peerConnectionId) {
           // console.warn('ev.id !== this._peerConnectionId', ev.id, this._peerConnectionId);
           return;
