@@ -454,6 +454,25 @@ class PeerConnectionObserver implements PeerConnection.Observer {
     }
 
     @Override
+    public void onRemoveTrack(final RtpReceiver receiver){
+        Log.d(TAG, "onRemoveTrack");
+
+        MediaStreamTrack track = receiver.track();
+
+        WritableMap res = Arguments.createMap();
+        res.putInt("id", id);
+
+        WritableMap trackInfo = Arguments.createMap();
+        trackInfo.putString("id", track.id());
+        trackInfo.putString("kind", track.kind());
+        trackInfo.putString("label", track.kind());
+
+        res.putMap("track", trackInfo);
+
+        webRTCModule.sendEvent("peerConnectionOnRemoveTrack", res);
+    }
+
+    @Override
     public void onDataChannel(DataChannel dataChannel) {
         final int dataChannelId = dataChannel.id();
         if (-1 == dataChannelId) {
@@ -542,75 +561,12 @@ class PeerConnectionObserver implements PeerConnection.Observer {
             params.putMap("receiver", rtpReceiverToMap(receiver));
 
 
-//            MediaStreamTrack track = receiver.track();
-//            if (track != null) {
-//                if (track.kind().equals(MediaStreamTrack.VIDEO_TRACK_KIND)) {
-//                    streamReactTag = "A";
-//                    Log.d(TAG, "streamReactTag Created: " + streamReactTag);
-//                    videoTrackAdapters.addAdapter(streamReactTag, (VideoTrack) track);
-//                } else {
-//                    Log.d(TAG, "track.kind().equals(MediaStreamTrack.VIDEO_TRACK_KIND)");
-//                }
-//                remoteTracks.put(track.id(), track);
-//            }
-//            WritableMap trackInfo = Arguments.createMap();
-//            trackInfo.putString("id", track.id());
-//            trackInfo.putString("label", track.kind());
-//            trackInfo.putString("kind", track.kind());
-//            trackInfo.putBoolean("enabled", track.enabled());
-//            trackInfo.putString("readyState", track.state().toString());
-//            trackInfo.putBoolean("remote", true);
-//
-//            params.putMap("track", trackInfo);
-
             webRTCModule.sendEvent("peerConnectionAddedTrack", params);
         }
     }
 
     @Override
     public void onTrack(RtpTransceiver transceiver) {
-        /*
-        if(isUnifiedPlan){
-            MediaStreamTrack track = transceiver.getReceiver().track();
-            if(track != null){
-                WritableMap trackInfo = Arguments.createMap();
-                if(track.kind().equals(MediaStreamTrack.VIDEO_TRACK_KIND)){
-                    String streamReactTag = UUID.randomUUID().toString();
-                    videoTrackAdapters.addAdapter(streamReactTag, (VideoTrack) track);
-
-                    if(transceiver.getSender().track() == null){
-                        MediaStreamTrack videoTrack = webRTCModule.getLocalTrackByType("video");
-
-                        if(videoTrack != null){
-                            transceiver.getSender().setTrack(videoTrack, false);
-                            transceiver.setDirection(RtpTransceiver.RtpTransceiverDirection.SEND_RECV);
-                            this.onRenegotiationNeeded();
-                        }
-                    }
-                }else {
-                    if(transceiver.getSender().track() == null) {
-                        MediaStreamTrack audioTrack = webRTCModule.getLocalTrackByType("audio");
-
-                        if(audioTrack != null){
-                            transceiver.getSender().setTrack(audioTrack, false);
-                            transceiver.setDirection(RtpTransceiver.RtpTransceiverDirection.SEND_RECV);
-                        }
-                    }
-                }
-
-                remoteTracks.put(track.id(), track);
-
-                trackInfo.putInt("id", id);
-                trackInfo.putString("trackId", track.id());
-                trackInfo.putString("kind", track.kind());
-                trackInfo.putString("label", track.id());
-                trackInfo.putBoolean("remote", true);
-                trackInfo.putBoolean("enabled", track.enabled());
-                trackInfo.putString("readyState", track.state().toString().toLowerCase());
-
-                webRTCModule.sendEvent("peerConnectionAddedTrack", trackInfo);
-            }
-        }*/
     }
 
     @Nullable
