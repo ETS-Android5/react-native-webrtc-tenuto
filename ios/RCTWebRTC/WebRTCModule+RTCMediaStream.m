@@ -295,7 +295,7 @@ RCT_EXPORT_METHOD(mediaStreamTrackSwitchCamera:(nonnull NSString *)trackID)
 RCT_EXPORT_METHOD(mediaStreamTrackSetFilter: (nonnull NSString *)trackID filterType: (nonnull NSString *) filterType){
     RTCMediaStreamTrack *track = self.localTracks[trackID];
     if (track) {
-        [(VideoCaptureController *)track.captureController setFilter:filterType];
+        [(VideoCaptureController *)track.captureController setSystemFilter:filterType];
     }
 }
 

@@ -20,12 +20,24 @@
 @implementation VideoCaptureController {
     VideoCapturer *_capturer;
     NSString *_deviceId;
-    NSString *_filter;
+    NSString *_systemFilter;
     BOOL _running;
     BOOL _usingFrontCamera;
     int _width;
     int _height;
     int _fps;
+}
+
+static id<VideoCaptureFilterDelegate> _filterDelegate;
+
++ (id<VideoCaptureFilterDelegate>)filterDelegate {
+    return _filterDelegate;
+}
+
++ (void)setFilterDelegate:(id<VideoCaptureFilterDelegate>)filterDelegate {
+    if (_filterDelegate != filterDelegate) {
+        _filterDelegate = filterDelegate;
+    }
 }
 
 -(instancetype)initWithCapturer:(VideoCapturer *)capturer
@@ -43,7 +55,7 @@
         _height = [constraints[@"height"] intValue];
         _fps = MIN([constraints[@"frameRate"] intValue], 30);
         
-        _filter = None;
+        _systemFilter = None;
 
         id facingMode = constraints[@"facingMode"];
 
@@ -140,8 +152,8 @@
     [self startCapture];
 }
 
--(void)setFilter:(NSString *)filter{
-    _filter = filter;
+-(void)setSystemFilter:(NSString *)systemFilter{
+    _systemFilter = systemFilter;
 }
 
 - (UIImage *) applyCIFilter: (UIImage *)uIImage
@@ -153,7 +165,7 @@
         CIImage *ciImage = [[CIImage alloc] initWithImage:uIImage];
 
         //  Set values for CIColorMonochrome Filter
-        CIFilter *filter = [CIFilter filterWithName:_filter];
+        CIFilter *filter = [CIFilter filterWithName:_systemFilter];
         [filter setValue:ciImage forKey:kCIInputImageKey];
 
         CIImage *result = [filter valueForKey:kCIOutputImageKey];
@@ -187,27 +199,40 @@
 }
 
 - (void)capturer:(RTCVideoCapturer *)capturer didCaptureVideoFrame:(RTCVideoFrame *)frame{
-    if(_filter == None){
+    if (_systemFilter == None && VideoCaptureController.filterDelegate == nil) {
         [_capturer.videoSource capturer:_capturer didCaptureVideoFrame:frame];
     } else {
         @autoreleasepool {
             RTCCVPixelBuffer *framebuffer = frame.buffer;         // RTCCVPixelBuffer
             CVPixelBufferRef pixelBuffer = framebuffer.pixelBuffer;
-            
             UIImage *uiImage = [self pixelBufferToUIImage:pixelBuffer];
-
             UIImage *resizedImage = [self resizeImage:uiImage convertToSize: CGSizeMake(frame.width, frame.height)];
-            UIImage *filteredImage = [self applyCIFilter: resizedImage];
-            
-            CIImage *inputImage = [CIImage imageWithCGImage:filteredImage.CGImage];
-            CIContext *ciContext = [CIContext contextWithCGContext:UIGraphicsGetCurrentContext() options:nil];
-            
-            [ciContext render:inputImage toCVPixelBuffer: pixelBuffer];
-            
-            RTCCVPixelBuffer *rtcBuffer = [[RTCCVPixelBuffer alloc] initWithPixelBuffer: pixelBuffer];
-            RTCVideoFrame *rtcFrame = [[RTCVideoFrame alloc] initWithBuffer:rtcBuffer rotation: frame.rotation timeStampNs:frame.timeStampNs];
-            
-            [_capturer.videoSource capturer:_capturer didCaptureVideoFrame:rtcFrame];
+
+            __weak typeof(self) weakSelf = self;
+            void (^setCaptureVideoFrame)(UIImage*) = ^(UIImage* image){
+                typeof(self) strongSelf = weakSelf;
+                if (!strongSelf) {
+                  return;
+                }
+
+                CIImage *inputImage = [CIImage imageWithCGImage:image.CGImage];
+                CIContext *ciContext = [CIContext contextWithCGContext:UIGraphicsGetCurrentContext() options:nil];
+                [ciContext render:inputImage toCVPixelBuffer: pixelBuffer];
+                
+                RTCCVPixelBuffer *rtcBuffer = [[RTCCVPixelBuffer alloc] initWithPixelBuffer: pixelBuffer];
+                RTCVideoFrame *rtcFrame = [[RTCVideoFrame alloc] initWithBuffer:rtcBuffer rotation: frame.rotation timeStampNs:frame.timeStampNs];
+                
+                [strongSelf->_capturer.videoSource capturer:strongSelf->_capturer
+                                       didCaptureVideoFrame:rtcFrame];
+            };
+
+            if (VideoCaptureController.filterDelegate != nil) {
+                [VideoCaptureController.filterDelegate videoCaptureController:self
+                                                        filterVideoFrameImage:resizedImage
+                                                                   completion:setCaptureVideoFrame];
+            } else {
+                setCaptureVideoFrame([self applyCIFilter: resizedImage]);
+            }            
         }
     }
 }
