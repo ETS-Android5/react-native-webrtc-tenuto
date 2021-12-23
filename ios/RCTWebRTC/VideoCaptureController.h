@@ -29,13 +29,24 @@ static NSString *const CIComicEffect = @"CIComicEffect";
 static NSString *const CIColorPosterize = @"CIColorPosterize";
 static NSString *const CIColorInvert = @"CIColorInvert";
 
+@class VideoCaptureController;
+@protocol VideoCaptureFilterDelegate<NSObject>
+
+- (void)videoCaptureController:(VideoCaptureController *)videoCaptureController
+         filterVideoFrameImage:(UIImage *)image
+                    completion:(void (^)(UIImage *image))completion;
+
+@end
+
 @interface VideoCaptureController : CaptureController<RTCVideoCapturerDelegate>
+
+@property (class, nonatomic, weak) id <VideoCaptureFilterDelegate> filterDelegate;
 
 -(instancetype)initWithCapturer:(RTCCameraVideoCapturer *)capturer
                  andConstraints:(NSDictionary *)constraints;
 -(void)startCapture;
 -(void)stopCapture;
 -(void)switchCamera;
--(void)setFilter:(NSString*) filter;
+-(void)setSystemFilter:(NSString*) filter;
 
 @end
