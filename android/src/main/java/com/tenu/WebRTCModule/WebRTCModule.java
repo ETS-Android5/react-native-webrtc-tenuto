@@ -1,6 +1,7 @@
 package com.tenu.WebRTCModule;
 
 import androidx.annotation.Nullable;
+
 import android.util.Log;
 import android.util.SparseArray;
 
@@ -45,6 +46,8 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
         private VideoEncoderFactory videoEncoderFactory = null;
         private VideoDecoderFactory videoDecoderFactory = null;
         private AudioDeviceModule audioDeviceModule = null;
+        private Loggable injectableLogger = null;
+        private Logging.Severity loggingSeverity = null;
 
         public Options() {
         }
@@ -59,6 +62,14 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
 
         public void setVideoEncoderFactory(VideoEncoderFactory videoEncoderFactory) {
             this.videoEncoderFactory = videoEncoderFactory;
+        }
+
+        public void setInjectableLogger(Loggable logger) {
+            this.injectableLogger = logger;
+        }
+
+        public void setLoggingSeverity(Logging.Severity severity) {
+            this.loggingSeverity = severity;
         }
     }
 
@@ -81,36 +92,36 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
     private void initAsync(Options options) {
         ReactApplicationContext reactContext = getReactApplicationContext();
 
-        PeerConnectionFactory.initialize(
-                PeerConnectionFactory.InitializationOptions.builder(reactContext)
-                        .createInitializationOptions());
-
         AudioDeviceModule adm = null;
         VideoEncoderFactory encoderFactory = null;
         VideoDecoderFactory decoderFactory = null;
+        Loggable injectableLogger = null;
+        Logging.Severity loggingSeverity = null;
 
         if (options != null) {
             adm = options.audioDeviceModule;
             encoderFactory = options.videoEncoderFactory;
             decoderFactory = options.videoDecoderFactory;
+            injectableLogger = options.injectableLogger;
+            loggingSeverity = options.loggingSeverity;
         }
 
-//         if (encoderFactory == null || decoderFactory == null) {
-//             // Initialize EGL context required for HW acceleration.
-//             EglBase.Context eglContext = EglUtils.getRootEglBaseContext();
-//
-//             if (eglContext != null) {
-//                 encoderFactory
-//                         = new DefaultVideoEncoderFactory(
-//                         eglContext,
-//                         /* enableIntelVp8Encoder */ true,
-//                         /* enableH264HighProfile */ false);
-//                 decoderFactory = new DefaultVideoDecoderFactory(eglContext);
-//             } else {
-        encoderFactory = new SoftwareVideoEncoderFactory();
-        decoderFactory = new SoftwareVideoDecoderFactory();
-//             }
-//         }
+        PeerConnectionFactory.initialize(
+                PeerConnectionFactory.InitializationOptions.builder(reactContext)
+                        .setInjectableLogger(injectableLogger, loggingSeverity)
+                        .createInitializationOptions());
+
+        if (encoderFactory == null || decoderFactory == null) {
+            // Initialize EGL context required for HW acceleration.
+            EglBase.Context eglContext = EglUtils.getRootEglBaseContext();
+
+            encoderFactory
+                    = new DefaultVideoEncoderFactory(
+                    eglContext,
+                    /* enableIntelVp8Encoder */ true,
+                    /* enableH264HighProfile */ true);
+            decoderFactory = new DefaultVideoDecoderFactory(eglContext);
+        }
 
         if (adm == null) {
             adm = JavaAudioDeviceModule.builder(reactContext).createAudioDeviceModule();
@@ -724,11 +735,11 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
 
     //FLAG: 직접 만든 코드 버전 쓰리
     @ReactMethod
-    public void peerConnectionAddTrack(int id, String trackId, Callback callback){
+    public void peerConnectionAddTrack(int id, String trackId, Callback callback) {
         ThreadUtils.runOnExecutor(() -> peerConnectionAddTrackAsync(id, trackId, callback));
     }
 
-    private void peerConnectionAddTrackAsync(int id, String trackId, Callback callback){
+    private void peerConnectionAddTrackAsync(int id, String trackId, Callback callback) {
         // 0. 해당하는 peerConnection 찾기
         PeerConnectionObserver pco = mPeerConnectionObservers.get(id);
         // 0. track 찾기
@@ -738,15 +749,15 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
             return;
         }
 
-        if(pco != null){
+        if (pco != null) {
             // 1. closed인지 확인하기
-            if(pco == null || pco.getPeerConnection() == null){
+            if (pco == null || pco.getPeerConnection() == null) {
                 callback.invoke(false, "pco == null || pco.getPeerConnection() == null");
                 Log.e(TAG, "pco == null || pco.getPeerConnection() == null");
                 return;
             }
             // 2. isUnifiedPlan인지
-            if(pco.isUnifiedPlan == true){
+            if (pco.isUnifiedPlan == true) {
                 RtpSender sender = null; // 반환할 sender.
                 // 3. 이미 전송하고 있는 track인지 확인
                 for (RtpSender rtpSender : pco.getPeerConnection().getSenders()) {
@@ -759,12 +770,12 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
                     }
                 }
                 boolean reuse = false;
-                if(sender == null){
+                if (sender == null) {
                     // 4. transceiver 찾기 -> kind 같고 sender.track 이 null이고
                     List<RtpTransceiver> transceivers = pco.getPeerConnection().getTransceivers();
-                    for(RtpTransceiver transceiver : transceivers){
-                        if(transceiver.getReceiver().track() != null){
-                            if(transceiver.getSender().track() == null && transceiver.getReceiver().track().kind().equalsIgnoreCase(mediaStreamTrack.kind())){
+                    for (RtpTransceiver transceiver : transceivers) {
+                        if (transceiver.getReceiver().track() != null) {
+                            if (transceiver.getSender().track() == null && transceiver.getReceiver().track().kind().equalsIgnoreCase(mediaStreamTrack.kind())) {
                                 transceiver.getSender().setTrack(mediaStreamTrack, false);
                                 transceiver.setDirection(RtpTransceiver.RtpTransceiverDirection.SEND_RECV);
                                 sender = transceiver.getSender();
@@ -775,14 +786,14 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
                         }
                     }
                     // 만약 없으면?
-                    if(sender == null){
+                    if (sender == null) {
                         Log.d(TAG, "sender가 없어서 addTrack 함!");
                         sender = pco.addTrack(mediaStreamTrack);
                     }
                 }
                 // 반환객체는 Sender. (track 포함!)
                 // 이미 전송중인 것도 여기서 보내고, 갈음한것도, 추가한 것도 여기서 보낸당!
-                if(sender != null){
+                if (sender != null) {
                     WritableMap map = Arguments.createMap();
                     WritableMap subMap = Arguments.createMap();
 
@@ -797,7 +808,7 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
 
                     callback.invoke(true, map);
                     Log.d(TAG, "peerConnectionAddTrackAsyncV3() succeed. sender is not null");
-                }else{
+                } else {
                     callback.invoke(false, "add track failed");
                     Log.e(TAG, "peerConnectionAddTrack() failed");
                 }
@@ -1011,6 +1022,16 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
                                           Callback callback) {
         ThreadUtils.runOnExecutor(() ->
                 peerConnectionCreateOfferAsync(id, options, callback));
+    }
+
+    @ReactMethod
+    public void addListener(String eventName) {
+        // Keep: Required for RN built in Event Emitter Calls.
+    }
+
+    @ReactMethod
+    public void removeListeners(Integer count) {
+        // Keep: Required for RN built in Event Emitter Calls.
     }
 
     private void peerConnectionCreateOfferAsync(int id,
@@ -1348,7 +1369,7 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
             case "inactive":
                 return RtpTransceiver.RtpTransceiverDirection.INACTIVE;
         }
-        Log.d(TAG, "parseDirection: not found: "+ src);
+        Log.d(TAG, "parseDirection: not found: " + src);
         throw new Error("Invalid direction");
     }
 
@@ -1374,17 +1395,17 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
                 }
             }
 
-            if (map.hasKey("sendEncodings")){
+            if (map.hasKey("sendEncodings")) {
                 ReadableArray rawSendEncodings = map.getArray("sendEncodings");
-                for (int i=0;i< rawSendEncodings.size();i++){
+                for (int i = 0; i < rawSendEncodings.size(); i++) {
                     ReadableMap params = rawSendEncodings.getMap(i);
                     sendEncodings.add(0, mapToEncoding(params));
                 }
             }
         }
-        if (map != null){
-            if (map.hasKey("sendEncodings")){
-                return new RtpTransceiver.RtpTransceiverInit(direction ,streamIds, sendEncodings);
+        if (map != null) {
+            if (map.hasKey("sendEncodings")) {
+                return new RtpTransceiver.RtpTransceiverInit(direction, streamIds, sendEncodings);
             } else {
                 return new RtpTransceiver.RtpTransceiverInit(direction, streamIds);
             }
@@ -1627,7 +1648,7 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
                     break;
                 }
             }
-            if(rtpSender == null){
+            if (rtpSender == null) {
                 Log.d(TAG, "peerConnectionSenderGetParameters() rtpSender is null");
                 callback.invoke(false, "rtpSender is null");
                 return;
@@ -1639,7 +1660,7 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
             res.putString("transactionId", "testtest");
             callback.invoke(true, res);
 
-        }else{
+        } else {
             Log.d(TAG, "peerConnectionSenderGetParameters() peerConnection is null");
             callback.invoke(false, "peerConnection is null");
             return;
@@ -1647,38 +1668,37 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
     }
 
 
-
     private RtpParameters.Encoding mapToEncoding(ReadableMap parameters) {
-        RtpParameters.Encoding encoding = new RtpParameters.Encoding((String)parameters.getString("rid"), true, 1.0);
+        RtpParameters.Encoding encoding = new RtpParameters.Encoding((String) parameters.getString("rid"), true, 1.0);
 
-        if( parameters.hasKey("active")) {
+        if (parameters.hasKey("active")) {
             encoding.active = parameters.getBoolean("active");
         }
 
-        if( parameters.hasKey("ssrc")) {
-            encoding.ssrc = ((Double)parameters.getDouble("ssrc")).longValue();
+        if (parameters.hasKey("ssrc")) {
+            encoding.ssrc = ((Double) parameters.getDouble("ssrc")).longValue();
         }
 
-        if( parameters.hasKey("minBitrate")) {
+        if (parameters.hasKey("minBitrate")) {
             encoding.minBitrateBps = parameters.getInt("minBitrate");
         }
 
-        if( parameters.hasKey("maxBitrate")) {
+        if (parameters.hasKey("maxBitrate")) {
             encoding.maxBitrateBps = parameters.getInt("maxBitrate");
         }
 
-        if( parameters.hasKey("maxFramerate")) {
+        if (parameters.hasKey("maxFramerate")) {
             encoding.maxFramerate = parameters.getInt("maxFramerate");
         }
 
-        if( parameters.hasKey("numTemporalLayers")) {
+        if (parameters.hasKey("numTemporalLayers")) {
             encoding.numTemporalLayers = parameters.getInt("numTemporalLayers");
         }
 
-        if( parameters.hasKey("scaleResolutionDownBy")) {
+        if (parameters.hasKey("scaleResolutionDownBy")) {
             encoding.scaleResolutionDownBy = parameters.getDouble("scaleResolutionDownBy");
         }
 
-        return  encoding;
+        return encoding;
     }
 }
